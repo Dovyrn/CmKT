@@ -20,6 +20,8 @@ base {
 repositories {
 	// Essential Maven repository
 	maven(url = "https://repo.essential.gg/repository/maven-public")
+	maven (url ="https://maven.shedaniel.me/" )
+	maven ( url =  "https://maven.terraformersmc.com/releases/" )
 	// Add other repositories here if needed
 }
 
@@ -41,8 +43,18 @@ dependencies {
 	modImplementation(include("gg.essential:vigilance:306")!!)
 	//modImplementation("gg.essential:essential-1.20.6-fabric:17141+gd6f4cfd3a8")
 	// UniversalCraft dependency
+	modImplementation(include("gg.essential:elementa:685")!!)
 
 	implementation("com.google.code.gson:gson:2.10.1")
+
+	// TOML parser
+	implementation("com.moandjiezana.toml:toml4j:0.7.2")
+
+	// Config UI (for ModMenu integration)
+	modImplementation("com.terraformersmc:modmenu:13.0.2") // For Fabric 1.21.4
+	modApi("me.shedaniel.cloth:cloth-config-fabric:17.0.144")
+	modImplementation("net.fabricmc.fabric-api:fabric-renderer-api-v1:x.y.z+api+build")
+	modImplementation("net.fabricmc.fabric-api:fabric-renderer-indigo:x.y.z+api+build")
 
 
 }

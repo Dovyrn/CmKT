@@ -3,14 +3,11 @@ package com.dov.cm
 import net.fabricmc.api.ClientModInitializer
 import com.dov.cm.commands.CommandHandler
 import com.dov.cm.config.Config
-import com.dov.cm.modules.Hitboxes
-import com.dov.cm.modules.TargetHUD
-import com.dov.cm.modules.MaceDive
+import com.dov.cm.modules.*
+import com.dov.cm.modules.render.Chams
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.minecraft.client.util.InputUtil
-import net.minecraft.client.option.KeyBinding
-import org.lwjgl.glfw.GLFW
+import com.dov.cm.modules.render.ESP
 
 object CmKtClient : ClientModInitializer {
     override fun onInitializeClient() {
@@ -19,7 +16,12 @@ object CmKtClient : ClientModInitializer {
         CommandHandler.onInitializeClient() // Ensure CommandHandler is loaded
         TargetHUD().onInitializeClient() // Register TargetHUD
         maceDive.init()
-        Hitboxes.init()
+        Hitbox.init()
+        Chams.init()
+        WeaponSwapper.init()
+        ESP.init()
+
+
         // Register a tick event to check key presses
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             // This is a simplified approach - you'll need to adapt to your needs

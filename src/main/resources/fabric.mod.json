@@ -34,6 +34,7 @@
     "fabric-language-kotlin": ">=${kotlin_loader_version}"
   },
   "suggests": {
-    "flamingo": "*"
+    "flamingo": "*",
+    "modmenu": "*"
   }
 }

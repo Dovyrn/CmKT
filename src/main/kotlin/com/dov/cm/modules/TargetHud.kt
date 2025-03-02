@@ -15,7 +15,7 @@ import net.minecraft.util.ActionResult
 class TargetHUD : ClientModInitializer {
     private var target: LivingEntity? = null
     private var lastHitTime: Long = 0
-    val hudConfig = Config
+    private val hudConfig = Config
 
     // Define minimum box width
     private val MIN_BOX_WIDTH = 80
@@ -49,12 +49,12 @@ class TargetHUD : ClientModInitializer {
 
         HudRenderCallback.EVENT.register { context, _ ->
             if (hudConfig.targetHudToggled && target != null) {
-                render(context, target!!, hudConfig.offsetX, hudConfig.offsetY, hudConfig.showHead, hudConfig.background)
+                render(context, target!!, hudConfig.offsetX, hudConfig.offsetY, hudConfig.background)
             }
         }
     }
 
-    private fun render(context: DrawContext, entity: LivingEntity, xOffset: Int, yOffset: Int, showHead: Boolean, opacity: Float) {
+    private fun render(context: DrawContext, entity: LivingEntity, xOffset: Int, yOffset: Int, opacity: Float) {
         val mc = MinecraftClient.getInstance()
         val player = mc.player ?: return
         val textRenderer: TextRenderer = mc.textRenderer
@@ -75,7 +75,7 @@ class TargetHUD : ClientModInitializer {
         val nameWidth = textRenderer.getWidth(entity.name.string)
         val statusWidth = textRenderer.getWidth(status)
         val healthText = "%.1f❤".format(health)
-        val healthTextWidth = textRenderer.getWidth(healthText)
+        textRenderer.getWidth(healthText)
         val healthDiffText = when {
             healthDiff > 0 -> "+%.1f".format(healthDiff)
             healthDiff < 0 -> "%.1f".format(healthDiff)

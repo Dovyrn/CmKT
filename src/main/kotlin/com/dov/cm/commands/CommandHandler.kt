@@ -5,6 +5,7 @@ import net.minecraft.client.MinecraftClient
 import com.dov.cm.config.Config
 import kotlin.concurrent.thread
 
+
 object CommandHandler {
     fun onInitializeClient() {
         ClientSendMessageEvents.ALLOW_CHAT.register { message ->
@@ -22,13 +23,10 @@ object CommandHandler {
         val initCommand = args[0].lowercase()
 
         if (initCommand == "gui") {
-            println("Before sleep")
-            //MinecraftClient.getInstance().execute {
-                //MinecraftClient.getInstance().setScreen(ExampleConfig.gui())
-
             thread {
                 Thread.sleep(1) // Run in a separate thread to avoid freezing the game
                 println("After sleep")
+
 
                 MinecraftClient.getInstance().execute {
                     MinecraftClient.getInstance().setScreen(Config.gui())

@@ -1,6 +1,7 @@
 package com.dov.cm.modules
 
 import com.dov.cm.config.Config
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -15,10 +16,6 @@ import net.minecraft.entity.EquipmentSlot
 import net.minecraft.entity.LivingEntity
 import net.minecraft.util.hit.EntityHitResult
 import net.minecraft.entity.Entity
-import net.minecraft.entity.mob.HostileEntity
-import net.minecraft.entity.decoration.EndCrystalEntity
-import net.minecraft.entity.mob.SlimeEntity
-import net.minecraft.entity.mob.MagmaCubeEntity
 import net.minecraft.item.SwordItem
 import net.minecraft.item.AxeItem
 import net.minecraft.util.hit.HitResult
@@ -48,24 +45,13 @@ class MaceDive {
     /**
      * Simulates a jump by pressing and releasing the jump key
      */
+    @OptIn(DelicateCoroutinesApi::class)
     private fun jump() {
         val jumpKey = mc.options.jumpKey
         GlobalScope.launch {
             KeyBinding.setKeyPressed(jumpKey.defaultKey, true)
             delay(50)
             KeyBinding.setKeyPressed(jumpKey.defaultKey, false)
-        }
-    }
-
-    /**
-     * Simulates sneaking to stop elytra flight
-     */
-    private fun sneak() {
-        val sneakKey = mc.options.sneakKey
-        GlobalScope.launch {
-            KeyBinding.setKeyPressed(sneakKey.defaultKey, true)
-            delay(100)
-            KeyBinding.setKeyPressed(sneakKey.defaultKey, false)
         }
     }
 
@@ -136,6 +122,7 @@ class MaceDive {
     /**
      * Launch sequence when player is on ground
      */
+    @OptIn(DelicateCoroutinesApi::class)
     private fun groundLaunchSequence() {
         // Capture current session ID to check for termination
         val sessionId = ++activeSessionId
@@ -157,7 +144,7 @@ class MaceDive {
 
             // Check current equipment state
             val isWearingElytraAlready = isWearingElytra()
-            val isWearingChestplateAlready = isWearingChestplate()
+            isWearingChestplate()
             val currentSlot = player.inventory.selectedSlot
 
             // Handle elytra equipment if needed
@@ -215,6 +202,7 @@ class MaceDive {
     /**
      * Launch sequence when player is already in air
      */
+    @OptIn(DelicateCoroutinesApi::class)
     private fun airLaunchSequence() {
         // Capture current session ID to check for termination
         val sessionId = ++activeSessionId
@@ -288,6 +276,7 @@ class MaceDive {
     /**
      * Monitor flight to detect when to start diving
      */
+    @OptIn(DelicateCoroutinesApi::class)
     private fun monitorFlight() {
         // Capture current session ID to check for termination
         val sessionId = activeSessionId
@@ -372,6 +361,7 @@ class MaceDive {
     /**
      * Monitor proximity to ground for dive attack
      */
+    @OptIn(DelicateCoroutinesApi::class)
     private fun monitorGroundProximity() {
         // Capture current session ID to check for termination
         val sessionId = activeSessionId
@@ -399,6 +389,7 @@ class MaceDive {
     /**
      * Prepare for attack by swapping to chestplate and mace
      */
+    @OptIn(DelicateCoroutinesApi::class)
     private fun prepareForAttack() {
         if (!isFlying) return
 
@@ -518,22 +509,7 @@ class MaceDive {
         if (entity is PlayerEntity && entity != mc.player) {
             return true
         }
-
-        // Hostile mobs
-        if (entity is HostileEntity) {
-            return true
-        }
         if (entity is LivingEntity) {
-            return true
-        }
-
-        // End crystals
-        if (entity is EndCrystalEntity) {
-            return true
-        }
-
-        // Slimes and Magma Cubes
-        if (entity is SlimeEntity || entity is MagmaCubeEntity) {
             return true
         }
 
