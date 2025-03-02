@@ -5,7 +5,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.ingame.HandledScreen
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Items
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket
@@ -17,6 +16,12 @@ import net.minecraft.entity.LivingEntity
 import net.minecraft.util.hit.EntityHitResult
 import net.minecraft.entity.Entity
 import net.minecraft.entity.mob.HostileEntity
+import net.minecraft.entity.decoration.EndCrystalEntity
+import net.minecraft.entity.mob.SlimeEntity
+import net.minecraft.entity.mob.MagmaCubeEntity
+import net.minecraft.item.SwordItem
+import net.minecraft.item.AxeItem
+import net.minecraft.util.hit.HitResult
 
 class MaceDive {
     private val mc = MinecraftClient.getInstance()
@@ -25,21 +30,19 @@ class MaceDive {
     private var elytraSlot = -1
     private var chestplateSlot = -1
     private var maceSlot = -1
+    private var lastAttackTime = 0L
+    private var lastSwapAttempt = 0L
+    // Debounce protection
+    private var lastKeyPressTime = 0L
+    private val DEBOUNCE_TIME = 500L // 500ms (adjust as needed)
+    // For tracking active sessions
+    private var activeSessionId = 0
 
     /**
      * Initialize the Mace Dive module
      */
     fun init() {
-        // Register event handlers for key pressing
-        registerKeyPressHandler()
-    }
-
-    /**
-     * Register the key press handler
-     */
-    private fun registerKeyPressHandler() {
-        // This is a placeholder - you'll need to integrate this with your mod's event system
-        // For example, using Fabric's KeyBinding system or a custom event handler
+        // Module initialization is handled by CmKtClient
     }
 
     /**
@@ -49,8 +52,20 @@ class MaceDive {
         val jumpKey = mc.options.jumpKey
         GlobalScope.launch {
             KeyBinding.setKeyPressed(jumpKey.defaultKey, true)
-            delay(5)
+            delay(50)
             KeyBinding.setKeyPressed(jumpKey.defaultKey, false)
+        }
+    }
+
+    /**
+     * Simulates sneaking to stop elytra flight
+     */
+    private fun sneak() {
+        val sneakKey = mc.options.sneakKey
+        GlobalScope.launch {
+            KeyBinding.setKeyPressed(sneakKey.defaultKey, true)
+            delay(100)
+            KeyBinding.setKeyPressed(sneakKey.defaultKey, false)
         }
     }
 
@@ -58,12 +73,33 @@ class MaceDive {
      * Handle key press events
      */
     fun onKeyPressed(keyChar: Char) {
+        // Continue with normal checks first to avoid unnecessary processing
         if (!Config.maceDiveEnabled || keyChar.toString().uppercase() != Config.maceDiveKey.uppercase()) {
             return
         }
 
         val player = mc.player ?: return
         if (mc.currentScreen != null) return
+
+        // Check debounce - ignore if pressed too soon after previous press
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastKeyPressTime < DEBOUNCE_TIME) {
+            UChat.mChat("§cMace Dive on cooldown (${((DEBOUNCE_TIME - (currentTime - lastKeyPressTime)) / 1000.0).toInt()}s)")
+            return
+        }
+
+        // Update last key press time
+        lastKeyPressTime = currentTime
+
+        // Terminate any existing sessions
+        if (isFlying) {
+            UChat.mChat("§6Terminating previous Mace Dive session")
+            isFlying = false
+            // Increment session ID to invalidate any running loops
+            activeSessionId++
+        }
+
+        UChat.mChat("§aMace Dive activated")
 
         if (player.isOnGround) {
             // Player is on ground - launch sequence
@@ -90,49 +126,89 @@ class MaceDive {
     }
 
     /**
+     * Check if the player is wearing elytra
+     */
+    private fun isWearingElytra(): Boolean {
+        val chestStack = mc.player?.getEquippedStack(EquipmentSlot.CHEST) ?: return false
+        return chestStack.item == Items.ELYTRA
+    }
+
+    /**
      * Launch sequence when player is on ground
      */
     private fun groundLaunchSequence() {
+        // Capture current session ID to check for termination
+        val sessionId = ++activeSessionId
+
         GlobalScope.launch {
             val player = mc.player ?: return@launch
             val interactionManager = mc.interactionManager ?: return@launch
+
+            // Check if this session has been terminated
+            if (sessionId != activeSessionId) {
+                UChat.mChat("§cMace Dive session terminated")
+                return@launch
+            }
 
             // Find equipment slots
             elytraSlot = findItemInHotbar(Items.ELYTRA)
             chestplateSlot = findChestplateSlot()
             maceSlot = findMaceSlot()
 
-            if (elytraSlot == -1) return@launch
-
+            // Check current equipment state
+            val isWearingElytraAlready = isWearingElytra()
+            val isWearingChestplateAlready = isWearingChestplate()
             val currentSlot = player.inventory.selectedSlot
 
-            // Switch to elytra slot and equip
-            if (isWearingChestplate()) {
+            // Handle elytra equipment if needed
+            if (!isWearingElytraAlready && Config.autoEquipElytra) {
+                if (elytraSlot == -1) {
+                    UChat.mChat("§cNo elytra found in hotbar!")
+                    return@launch
+                }
+
+                // Switch to elytra slot and equip
                 player.inventory.selectedSlot = elytraSlot
                 interactionManager.interactItem(player, Hand.MAIN_HAND)
+                delay(100) // Give time for equipping
+
+                UChat.mChat("§aEquipped elytra for flight")
+            } else if (isWearingElytraAlready) {
+                UChat.mChat("§aAlready wearing elytra")
             }
 
             // First jump
             jump()
 
+            // Wait before second jump
             delay(200)
 
-            // Second jump
+            // Second jump to activate elytra
             jump()
 
+            // Verify elytra is equipped and active
+            if (!isWearingElytra()) {
+                UChat.mChat("§cFailed to equip/activate elytra!")
+                player.inventory.selectedSlot = currentSlot
+                return@launch
+            }
+            // Wait to fly
+            delay(100)
             // Use firework to boost
             useFirework()
 
-            // Return to original slot
-            player.inventory.selectedSlot = currentSlot
+            // Return to original slot if we changed it
+            if (player.inventory.selectedSlot != currentSlot) {
+                player.inventory.selectedSlot = currentSlot
+            }
 
             isFlying = true
             initialY = player.y
 
+            UChat.mChat("§aLaunched! Monitoring flight...")
+
             // Start monitoring for fall
             monitorFlight()
-
-            //monitorGroundProximity()
         }
     }
 
@@ -140,34 +216,69 @@ class MaceDive {
      * Launch sequence when player is already in air
      */
     private fun airLaunchSequence() {
+        // Capture current session ID to check for termination
+        val sessionId = ++activeSessionId
+
         GlobalScope.launch {
             val player = mc.player ?: return@launch
             val interactionManager = mc.interactionManager ?: return@launch
+
+            // Check if this session has been terminated
+            if (sessionId != activeSessionId) {
+                UChat.mChat("§cMace Dive session terminated")
+                return@launch
+            }
 
             // Find equipment slots
             elytraSlot = findItemInHotbar(Items.ELYTRA)
             chestplateSlot = findChestplateSlot()
             maceSlot = findMaceSlot()
 
-            if (elytraSlot == -1) return@launch
-
+            // Check current equipment state
+            val isWearingElytraAlready = isWearingElytra()
             val currentSlot = player.inventory.selectedSlot
 
-            // Switch to elytra slot and equip
-            player.inventory.selectedSlot = elytraSlot
-            interactionManager.interactItem(player, Hand.MAIN_HAND)
+            // Handle elytra equipment if needed
+            if (!isWearingElytraAlready && Config.autoEquipElytra) {
+                if (elytraSlot == -1) {
+                    UChat.mChat("§cNo elytra found in hotbar!")
+                    return@launch
+                }
+
+                // Switch to elytra slot and equip
+                player.inventory.selectedSlot = elytraSlot
+                interactionManager.interactItem(player, Hand.MAIN_HAND)
+                delay(100) // Give time for equipping
+
+                UChat.mChat("§aEquipped elytra for flight")
+            } else if (isWearingElytraAlready) {
+                UChat.mChat("§aAlready wearing elytra")
+            }
 
             // Jump to activate elytra
             jump()
 
+            delay(200) // Wait for elytra activation
+
+            // Verify elytra is equipped
+            if (!isWearingElytra()) {
+                UChat.mChat("§cFailed to equip/activate elytra!")
+                player.inventory.selectedSlot = currentSlot
+                return@launch
+            }
+
             // Use firework to boost
             useFirework()
 
-            // Return to original slot
-            player.inventory.selectedSlot = currentSlot
+            // Return to original slot if we changed it
+            if (player.inventory.selectedSlot != currentSlot) {
+                player.inventory.selectedSlot = currentSlot
+            }
 
             isFlying = true
             initialY = player.y
+
+            UChat.mChat("§aLaunched! Monitoring ground proximity...")
 
             // Start monitoring for ground proximity immediately
             monitorGroundProximity()
@@ -178,11 +289,25 @@ class MaceDive {
      * Monitor flight to detect when to start diving
      */
     private fun monitorFlight() {
+        // Capture current session ID to check for termination
+        val sessionId = activeSessionId
+
         GlobalScope.launch {
             var lastY = mc.player?.y ?: return@launch
+            var maxAltitudeReached = initialY
+            var initialAltitudeCheck = true
 
-            while (isFlying) {
-                delay(50) // Check every 100ms
+            // Add a short delay to allow player to gain some altitude first
+            delay(750)
+
+            // Check if this session has been terminated during the delay
+            if (sessionId != activeSessionId || !isFlying) {
+                UChat.mChat("§cMace Dive flight monitoring terminated")
+                return@launch
+            }
+
+            while (isFlying && sessionId == activeSessionId) {
+                delay(50) // Check every 50ms for more precision
 
                 val player = mc.player
                 if (player == null) {
@@ -194,16 +319,50 @@ class MaceDive {
                 val verticalVelocity = currentY - lastY
                 lastY = currentY
 
+                // Initial altitude check to ensure we've gained some height before checking for ground
+                if (initialAltitudeCheck) {
+                    if (currentY > initialY + 5) {
+                        // We've gained at least 5 blocks of height, safe to start monitoring ground
+                        initialAltitudeCheck = false
+                        UChat.mChat("§6Gained altitude, monitoring flight...")
+                    } else {
+                        // Skip ground checks until we've gained some altitude
+                        continue
+                    }
+                }
+
+                // Track maximum height reached
+                if (currentY > maxAltitudeReached) {
+                    maxAltitudeReached = currentY
+                }
+
+                // Update chestplate slot in case inventory changed
+                chestplateSlot = findChestplateSlot()
+
                 // Check if we've reached max height or started falling
                 val reachedMaxHeight = currentY >= initialY + Config.maxHeight
-                val losingMomentum = verticalVelocity < 0.05
+                val reachedApex = verticalVelocity < 0.05 && currentY > initialY + 10 // We've peaked and started descending
 
-                if (reachedMaxHeight) {
-                    // Start monitoring for ground proximity
-                    if (Config.autoSwapChestplate && chestplateSlot != -1) {
+                // Start monitoring for ground proximity when we reach max height or start falling from sufficient height
+                if (reachedMaxHeight || reachedApex) {
+                    UChat.mChat("§6Beginning descent from height ${(maxAltitudeReached - initialY).toInt()} blocks")
+
+                    // Only swap to chestplate if player is wearing elytra
+                    if (Config.autoSwapChestplate && chestplateSlot != -1 && isWearingElytra()) {
                         player.inventory.selectedSlot = chestplateSlot
                         mc.interactionManager?.interactItem(player, Hand.MAIN_HAND)
+                        UChat.mChat("§6Swapping elytra for chestplate...")
                     }
+
+                    monitorGroundProximity() // Start monitoring for ground proximity
+                    break
+                }
+
+                // Also check for ground proximity directly in case we miss the apex
+                // Only do this once we're not in initial ascent phase and have gained some height
+                if (!initialAltitudeCheck && isNearGround(Config.groundDetectionHeight.toDouble())) {
+                    UChat.mChat("§cGround detected during descent!")
+                    prepareForAttack()
                     break
                 }
             }
@@ -214,9 +373,12 @@ class MaceDive {
      * Monitor proximity to ground for dive attack
      */
     private fun monitorGroundProximity() {
+        // Capture current session ID to check for termination
+        val sessionId = activeSessionId
+
         GlobalScope.launch {
-            while (isFlying) {
-                //delay(50) // Check more frequently when preparing to dive
+            while (isFlying && sessionId == activeSessionId) {
+                delay(30) // Check very frequently when preparing to dive
 
                 val player = mc.player
                 if (player == null) {
@@ -226,6 +388,7 @@ class MaceDive {
 
                 // Check if we're close to the ground
                 if (isNearGround(Config.groundDetectionHeight.toDouble())) {
+                    UChat.mChat("§6Ground proximity detected! Preparing for attack...")
                     prepareForAttack()
                     break
                 }
@@ -239,28 +402,55 @@ class MaceDive {
     private fun prepareForAttack() {
         if (!isFlying) return
 
+        // Capture current session ID to check for termination
+        val sessionId = activeSessionId
+
         GlobalScope.launch {
+            // Check if this session has been terminated
+            if (sessionId != activeSessionId) {
+                UChat.mChat("§cMace Dive attack preparation terminated")
+                return@launch
+            }
             val player = mc.player ?: return@launch
             val interactionManager = mc.interactionManager ?: return@launch
 
-            // Swap to chestplate if enabled
-            if (Config.autoSwapChestplate && chestplateSlot != -1) {
+            // Update equipment slots
+            chestplateSlot = findChestplateSlot()
+            maceSlot = findMaceSlot()
+
+            // Swap to chestplate if enabled and we're wearing elytra
+            if (Config.autoSwapChestplate && chestplateSlot != -1 && isWearingElytra()) {
+                // Record the time of this attempt
+                lastSwapAttempt = System.currentTimeMillis()
+
+                UChat.mChat("§6Swapping to chestplate...")
                 player.inventory.selectedSlot = chestplateSlot
-                // Remove UChat.mChat call as it's not defined in the provided code
-                interactionManager.interactItem(player, Hand.MAIN_HAND)
-                //delay(500) // Short delay to ensure equipment change
+
+                // Try multiple times to ensure it works
+                for (attempt in 1..3) {
+                    interactionManager.interactItem(player, Hand.MAIN_HAND)
+                    delay(25)
+                }
             }
 
             // Swap to mace if available
             if (maceSlot != -1) {
+                UChat.mChat("§6Equipping mace...")
                 player.inventory.selectedSlot = maceSlot
             }
+            delay(200)
 
             // Attack based on selected mode
             when (Config.attackMode) {
-                0 -> {} // None - do nothing
-                1 -> triggerBotAttack() // TriggerBot
-                2 -> silentAttack() // Silent
+                0 -> UChat.mChat("§aAttack mode: None")
+                1 -> {
+                    UChat.mChat("§aAttack mode: TriggerBot")
+                    triggerBotAttack()
+                }
+                2 -> {
+                    UChat.mChat("§aAttack mode: Silent")
+                    silentAttack()
+                }
             }
 
             // Reset flying state
@@ -269,60 +459,87 @@ class MaceDive {
     }
 
     /**
-     * TriggerBot attack implementation - attacks any entity the cursor is over
-     */
-    /**
      * TriggerBot attack implementation - attacks entities when looking at them
-     * Based on a more comprehensive implementation
      */
     private fun triggerBotAttack() {
         val player = mc.player ?: return
         val interactionManager = mc.interactionManager ?: return
+        val world = mc.world ?: return
 
-        // Don't attack if a GUI screen is open
-        if (mc.currentScreen is HandledScreen<*>) {
+        // Check if attack cooldown is met
+        if (System.currentTimeMillis() - lastAttackTime < 250) {
             return
         }
 
-        // Get the entity the player is looking at
-        if (mc.crosshairTarget !is EntityHitResult) {
-            return
+        // Get entities in a sphere around the player
+        val range = 3 // Attack range in blocks
+        val targetEntities = ArrayList<Entity>()
+
+        // Get entities in range
+        world.getEntitiesByClass(Entity::class.java,
+            Box(player.x - range, player.y - range, player.z - range,
+                player.x + range, player.y + range, player.z + range)
+        ) { entity ->
+            entity != player && isValidTarget(entity)
+        }.forEach { targetEntities.add(it) }
+
+        // Sort by distance
+        targetEntities.sortBy { player.squaredDistanceTo(it) }
+
+        // First try to attack what we're looking at
+        if (mc.crosshairTarget?.type == HitResult.Type.ENTITY) {
+            val hit = mc.crosshairTarget as EntityHitResult
+            val entity = hit.entity
+
+            if (entity != player && isValidTarget(entity)) {
+                UChat.mChat("§aAttacking targeted entity: ${entity.type.toString().split(".").last()}")
+                interactionManager.attackEntity(player, entity)
+                player.swingHand(Hand.MAIN_HAND)
+                lastAttackTime = System.currentTimeMillis()
+                return
+            }
         }
 
-        val hitResult = mc.crosshairTarget as EntityHitResult
-        val entity = hitResult.entity
-
-        // Don't attack self
-        if (entity == player) {
-            return
+        // If we couldn't hit what we're looking at, try the closest valid entity
+        if (targetEntities.isNotEmpty()) {
+            val closestEntity = targetEntities[0]
+            UChat.mChat("§aAttacking nearest entity: ${closestEntity.type.toString().split(".").last()}")
+            interactionManager.attackEntity(player, closestEntity)
+            player.swingHand(Hand.MAIN_HAND)
+            lastAttackTime = System.currentTimeMillis()
         }
-
-        // Check if the entity is a valid target
-        if (!isValidTarget(entity)) {
-            return
-        }
-
-        // Check if the entity is within range (3 blocks)
-        if (player.squaredDistanceTo(entity) > 3 * 3) {
-            return
-        }
-
-        // Attack the entity
-        interactionManager.attackEntity(player, entity)
-        player.swingHand(Hand.MAIN_HAND)
     }
 
+    /**
+     * Check if an entity is a valid target
+     */
     private fun isValidTarget(entity: Entity): Boolean {
-        // Add your entity filtering logic here
-        // Example: Only attack hostile mobs and players
-        return when (entity) {
-            is HostileEntity -> true
-            is PlayerEntity -> entity != mc.player
-            else -> false
+        // Players
+        if (entity is PlayerEntity && entity != mc.player) {
+            return true
         }
+
+        // Hostile mobs
+        if (entity is HostileEntity) {
+            return true
+        }
+        if (entity is LivingEntity) {
+            return true
+        }
+
+        // End crystals
+        if (entity is EndCrystalEntity) {
+            return true
+        }
+
+        // Slimes and Magma Cubes
+        if (entity is SlimeEntity || entity is MagmaCubeEntity) {
+            return true
+        }
+
+        // Add other entity types as needed
+        return false
     }
-
-
 
     /**
      * Silent attack implementation - sends attack packet to nearest player
@@ -330,40 +547,35 @@ class MaceDive {
     private fun silentAttack() {
         val player = mc.player ?: return
         val networkHandler = mc.networkHandler ?: return
+        val world = mc.world ?: return
 
-        val nearestPlayer = findNearestPlayer()
-        if (nearestPlayer != null) {
+        // Get all valid targets in range
+        val range = 3.0 // Attack range
+        val targets = ArrayList<Entity>()
+
+        world.getEntitiesByClass(Entity::class.java,
+            Box(player.x - range, player.y - range, player.z - range,
+                player.x + range, player.y + range, player.z + range)
+        ) { entity ->
+            entity != player && isValidTarget(entity)
+        }.forEach { targets.add(it) }
+
+        // Sort by distance
+        targets.sortBy { player.squaredDistanceTo(it) }
+
+        // Attack closest target
+        if (targets.isNotEmpty()) {
+            val target = targets[0]
+            UChat.mChat("§aSilently attacking: ${target.type.toString().split(".").last()}")
+
             // Send attack packet directly without swinging arm visibly
             val packet = PlayerInteractEntityC2SPacket.attack(
-                nearestPlayer,
+                target,
                 player.isSneaking
             )
             networkHandler.sendPacket(packet)
+            lastAttackTime = System.currentTimeMillis()
         }
-    }
-
-    /**
-     * Find nearest player within range
-     */
-    private fun findNearestPlayer(): PlayerEntity? {
-        val range = 6.0 // Attack range
-        val player = mc.player ?: return null
-        val world = mc.world ?: return null
-
-        // Create a box around the player
-        val box = Box(
-            player.x - range, player.y - range, player.z - range,
-            player.x + range, player.y + range, player.z + range
-        )
-
-        // Find all players in range
-        val nearbyPlayers = world.getEntitiesByClass(
-            PlayerEntity::class.java,
-            box
-        ) { it != player }
-
-        // Find nearest player
-        return nearbyPlayers.minByOrNull { it.squaredDistanceTo(player) }
     }
 
     /**
@@ -373,12 +585,28 @@ class MaceDive {
         val player = mc.player ?: return false
         val world = mc.world ?: return false
 
-        // Improved implementation using ray tracing
+        // Improved implementation with multiple checks
+        // Check directly below
         for (y in 1..height.toInt()) {
             if (!world.getBlockState(player.blockPos.down(y)).isAir) {
                 return true
             }
         }
+
+        // Check slightly forward in movement direction to anticipate landing spot
+        val velocity = player.velocity
+        val lookAhead = 2.0 // Look ahead blocks
+        val lookX = player.x + velocity.x * lookAhead
+        val lookZ = player.z + velocity.z * lookAhead
+
+        for (y in 1..height.toInt()) {
+            val blockPos = player.blockPos.mutableCopy()
+            blockPos.set(lookX.toInt(), blockPos.y - y, lookZ.toInt())
+            if (!world.getBlockState(blockPos).isAir) {
+                return true
+            }
+        }
+
         return false
     }
 
@@ -401,6 +629,8 @@ class MaceDive {
             }
 
             player.inventory.selectedSlot = currentSlot
+        } else {
+            UChat.mChat("§cNo fireworks found in hotbar!")
         }
     }
 
@@ -441,17 +671,27 @@ class MaceDive {
     }
 
     /**
-     * Find a mace in the hotbar
+     * Find a mace or other weapon in the hotbar
      */
     private fun findMaceSlot(): Int {
         val player = mc.player ?: return -1
 
+        // First priority: Find actual mace item
         for (i in 0..8) {
             val stack = player.inventory.getStack(i)
             if (stack.item.translationKey.contains("mace")) {
                 return i
             }
         }
+
+        // Second priority: Find any sword or axe
+        for (i in 0..8) {
+            val stack = player.inventory.getStack(i)
+            if (stack.item is SwordItem || stack.item is AxeItem) {
+                return i
+            }
+        }
+
         return -1
     }
 }
