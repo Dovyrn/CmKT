@@ -18,19 +18,23 @@
 
   "environment": "client",
   "entrypoints": {
-    "client": ["com.dov.cm.CmKtClient"]
+    "client": ["com.logicalgeekboy.logical_zoom.LogicalZoom"]
   },
   "mixins": [
-    "logical_zoom.client-mixins.json"
+    {
+      "config": "logical_zoom.client-mixins.json",
+      "environment": "client"
+    }
   ],
 
   "depends": {
     "fabricloader": ">=0.16.9",
     "fabric": "*",
     "minecraft": ">=1.21.4",
-    "fabric-language-kotlin": "${kotlin_loader_version}"
+    "fabric-language-kotlin": ">=${kotlin_loader_version}"
   },
   "suggests": {
-    "flamingo": "*"
+    "flamingo": "*",
+    "modmenu": "*"
   }
 }

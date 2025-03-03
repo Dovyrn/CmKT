@@ -48,11 +48,9 @@ dependencies {
 
 	implementation("com.google.code.gson:gson:2.10.1")
 
-	// TOML parser
-	implementation("com.moandjiezana.toml:toml4j:0.7.2")
+
 
 	// Config UI (for ModMenu integration)
-	modImplementation("com.terraformersmc:modmenu:13.0.2") // For Fabric 1.21.4
 	modImplementation("net.fabricmc.fabric-api:fabric-renderer-api-v1:1.21.4+api+build")
 
 
@@ -107,5 +105,5 @@ publishing {
 		// Example: Maven Central or a private Maven repository
 	}
 }
-//sourceSets { main { java.srcDirs("src/main/java", "src/main/kotlin") }}
+
 
