@@ -193,7 +193,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SWITCH,
         name = "ESP",
         description = "Enables entity ESP (see entities through walls)",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP"
     )
     var espEnabled: Boolean = false
@@ -202,7 +202,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SELECTOR,
         name = "ESP Type",
         description = "Choose ESP rendering style",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP",
         options = ["Box", "Outline", "2D", "Health Bar", "Shaded", "Ring"]
     )
@@ -212,7 +212,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SWITCH,
         name = "Render Players",
         description = "Show ESP for player entities",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP"
     )
     var espRenderPlayers: Boolean = true
@@ -221,7 +221,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SWITCH,
         name = "Render Mobs",
         description = "Show ESP for mob entities",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP"
     )
     var espRenderMobs: Boolean = false
@@ -230,7 +230,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SWITCH,
         name = "Render Items",
         description = "Show ESP for item entities",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP"
     )
     var espRenderItems: Boolean = false
@@ -239,7 +239,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SWITCH,
         name = "Render Invisible",
         description = "Show ESP for invisible entities",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP"
     )
     var espRenderInvisible: Boolean = false
@@ -248,7 +248,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SWITCH,
         name = "Render Self",
         description = "Show ESP for your own player",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP"
     )
     var espRenderSelf: Boolean = false
@@ -257,7 +257,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SWITCH,
         name = "Rainbow Color",
         description = "Use rainbow colors for ESP",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP"
     )
     var espRainbowColor: Boolean = false
@@ -266,7 +266,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SLIDER,
         name = "Render Distance",
         description = "Maximum distance to render ESP (in blocks)",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP",
         min = 10,
         max = 128
@@ -277,7 +277,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.SLIDER,
         name = "Line Width",
         description = "Width of ESP outline/lines",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP",
         min = 1,
         max = 5
@@ -288,7 +288,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.COLOR,
         name = "Player ESP Color",
         description = "Color for ESP rendering of players",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP Colors"
     )
     var espPlayerColor: Color = Color(0, 255, 0, 100)
@@ -297,7 +297,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.COLOR,
         name = "Mob ESP Color",
         description = "Color for ESP rendering of mobs",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP Colors"
     )
     var espMobColor: Color = Color(255, 0, 0, 100)
@@ -306,7 +306,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         type = PropertyType.COLOR,
         name = "Item ESP Color",
         description = "Color for ESP rendering of items",
-        category = "Combat",
+        category = "Render",
         subcategory = "ESP Colors"
     )
     var espItemColor: Color = Color(0, 0, 255, 100)
@@ -420,7 +420,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
 
 // Add this subcategory description in the init block
         setSubcategoryDescription(
-            "Combat",
+            "Render",
             "ESP",
             "Settings for the entity ESP module"
         )
@@ -443,7 +443,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
             "Stuff for debugging the mod"
         )
         setSubcategoryDescription(
-            "Combat",
+            "Render",
             "ESP",
             "See entities through walls with customizable boxes and tracers"
         )

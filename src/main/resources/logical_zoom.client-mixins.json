@@ -1,12 +1,11 @@
 {
   "required": true,
-  "package": "com.logicalgeekboy.logical_zoom.mixin",
+  "package": "com.dov.cm.mixins",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
   ],
   "client": [
-      "ClientPlayerInteractionManagerMixin"
-    ],
+  ],
   "injectors": {
     "defaultRequire": 1
   }

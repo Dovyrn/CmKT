@@ -1,6 +1,7 @@
-package com.dov.cm.modules
+package com.dov.cm.modules.combat
 
 import com.dov.cm.config.Config
+import com.dov.cm.modules.UChat
 import kotlinx.coroutines.DelicateCoroutinesApi
 import net.minecraft.client.MinecraftClient
 import net.minecraft.entity.Entity

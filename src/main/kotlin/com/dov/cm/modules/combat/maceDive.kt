@@ -1,4 +1,4 @@
-package com.dov.cm.modules
+package com.dov.cm.modules.combat
 
 import com.dov.cm.config.Config
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -19,9 +19,7 @@ import net.minecraft.entity.Entity
 import net.minecraft.item.SwordItem
 import net.minecraft.item.AxeItem
 import net.minecraft.util.hit.HitResult
-import com.dov.cm.util.EntityEspUtil
-import java.awt.Color
-import net.minecraft.client.world.WorldEventHandler
+import com.dov.cm.modules.UChat
 
 class MaceDive {
     private val mc = MinecraftClient.getInstance()

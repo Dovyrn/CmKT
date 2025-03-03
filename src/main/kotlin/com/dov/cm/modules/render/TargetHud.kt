@@ -1,4 +1,4 @@
-package com.dov.cm.modules
+package com.dov.cm.modules.render
 
 import com.dov.cm.config.Config
 import net.fabricmc.api.ClientModInitializer

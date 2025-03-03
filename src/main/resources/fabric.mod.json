@@ -21,20 +21,16 @@
     "client": ["com.dov.cm.CmKtClient"]
   },
   "mixins": [
-    {
-      "config": "logical_zoom.client-mixins.json",
-      "environment": "client"
-    }
+    "logical_zoom.client-mixins.json"
   ],
 
   "depends": {
     "fabricloader": ">=0.16.9",
     "fabric": "*",
     "minecraft": ">=1.21.4",
-    "fabric-language-kotlin": ">=${kotlin_loader_version}"
+    "fabric-language-kotlin": "${kotlin_loader_version}"
   },
   "suggests": {
-    "flamingo": "*",
-    "modmenu": "*"
+    "flamingo": "*"
   }
 }

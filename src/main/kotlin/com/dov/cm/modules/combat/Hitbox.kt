@@ -1,4 +1,4 @@
-package com.dov.cm.modules
+package com.dov.cm.modules.combat
 
 import com.dov.cm.config.Config
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
