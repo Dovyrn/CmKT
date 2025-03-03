@@ -18,7 +18,7 @@
 
   "environment": "client",
   "entrypoints": {
-    "client": ["com.logicalgeekboy.logical_zoom.LogicalZoom"]
+    "client": ["com.dov.cm.CmKtClient"]
   },
   "mixins": [
     {

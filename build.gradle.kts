@@ -22,6 +22,7 @@ repositories {
 	maven(url = "https://repo.essential.gg/repository/maven-public")
 	maven (url ="https://maven.shedaniel.me/" )
 	maven ( url =  "https://maven.terraformersmc.com/releases/" )
+	maven (url= "https://maven.fabricmc.net/")
 	// Add other repositories here if needed
 }
 
@@ -52,9 +53,7 @@ dependencies {
 
 	// Config UI (for ModMenu integration)
 	modImplementation("com.terraformersmc:modmenu:13.0.2") // For Fabric 1.21.4
-	modApi("me.shedaniel.cloth:cloth-config-fabric:17.0.144")
-	modImplementation("net.fabricmc.fabric-api:fabric-renderer-api-v1:x.y.z+api+build")
-	modImplementation("net.fabricmc.fabric-api:fabric-renderer-indigo:x.y.z+api+build")
+	modImplementation("net.fabricmc.fabric-api:fabric-renderer-api-v1:1.21.4+api+build")
 
 
 }

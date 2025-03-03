@@ -312,6 +312,8 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     var espItemColor: Color = Color(0, 0, 255, 100)
 
 
+
+
     // Chams Settings
     @Property(
         type = PropertyType.SWITCH,
@@ -414,6 +416,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("espPlayerColor", "espEnabled")
         addDependency("espMobColor", "espEnabled")
         addDependency("espItemColor", "espEnabled")
+
 
 // Add this subcategory description in the init block
         setSubcategoryDescription(

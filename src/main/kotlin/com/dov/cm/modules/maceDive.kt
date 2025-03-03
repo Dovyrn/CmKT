@@ -19,6 +19,9 @@ import net.minecraft.entity.Entity
 import net.minecraft.item.SwordItem
 import net.minecraft.item.AxeItem
 import net.minecraft.util.hit.HitResult
+import com.dov.cm.util.EntityEspUtil
+import java.awt.Color
+import net.minecraft.client.world.WorldEventHandler
 
 class MaceDive {
     private val mc = MinecraftClient.getInstance()
@@ -517,9 +520,6 @@ class MaceDive {
         return false
     }
 
-    /**
-     * Silent attack implementation - sends attack packet to nearest player
-     */
     private fun silentAttack() {
         val player = mc.player ?: return
         val networkHandler = mc.networkHandler ?: return
@@ -527,22 +527,19 @@ class MaceDive {
 
         // Get all valid targets in range
         val range = 3.0 // Attack range
-        val targets = ArrayList<Entity>()
-
-        world.getEntitiesByClass(Entity::class.java,
+        val targets = world.getEntitiesByClass(Entity::class.java,
             Box(player.x - range, player.y - range, player.z - range,
                 player.x + range, player.y + range, player.z + range)
         ) { entity ->
             entity != player && isValidTarget(entity)
-        }.forEach { targets.add(it) }
-
-        // Sort by distance
-        targets.sortBy { player.squaredDistanceTo(it) }
+        }.sortedBy { player.squaredDistanceTo(it) }
 
         // Attack closest target
-        if (targets.isNotEmpty()) {
-            val target = targets[0]
+        targets.firstOrNull()?.let { target ->
             UChat.mChat("§aSilently attacking: ${target.type.toString().split(".").last()}")
+
+            // Schedule rendering on the render thread
+            targetToRender = target  // Store the target in a class field
 
             // Send attack packet directly without swinging arm visibly
             val packet = PlayerInteractEntityC2SPacket.attack(
@@ -553,6 +550,11 @@ class MaceDive {
             lastAttackTime = System.currentTimeMillis()
         }
     }
+
+    // Class field to store the target
+    private var targetToRender: Entity? = null
+
+
 
     /**
      * Check if player is near ground with improved detection

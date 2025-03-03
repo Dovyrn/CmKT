@@ -7,7 +7,7 @@ import com.dov.cm.modules.*
 import com.dov.cm.modules.render.Chams
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.util.InputUtil
-import com.dov.cm.modules.render.ESP
+import com.dov.cm.modules.render.ChestEsp
 
 object CmKtClient : ClientModInitializer {
     override fun onInitializeClient() {
@@ -19,7 +19,7 @@ object CmKtClient : ClientModInitializer {
         Hitbox.init()
         Chams.init()
         WeaponSwapper.init()
-        ESP.init()
+        ChestEsp.init()
 
 
         // Register a tick event to check key presses
