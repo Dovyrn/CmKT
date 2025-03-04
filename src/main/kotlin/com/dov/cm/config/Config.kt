@@ -82,13 +82,23 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
 
     @Property(
         type = PropertyType.TEXT,
-        name = "Keybind",
+        name = "Mace Keybind",
         description = "Key to activate Mace Dive (single character)",
         category = "Combat",
         subcategory = "Mace Dive",
         placeholder = "Enter a key"
     )
     var maceDiveKey: String = "V"
+
+    @Property(
+        type = PropertyType.TEXT,
+        name = "Fast Mace Keybind",
+        description = "Key to activate Fast Mace Dive (single character)",
+        category = "Combat",
+        subcategory = "Mace Dive",
+        placeholder = "Enter a key"
+    )
+    var fastMaceDiveKey: String = "R"
 
     @Property(
         type = PropertyType.SLIDER,
@@ -150,6 +160,59 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         max = 100
     )
     var maxHeight: Int = 50
+
+    // MACE D-TAP
+
+    @Property(
+        PropertyType.SWITCH,
+        name = "Mace D-Tap",
+        description = "Uses 2 sets of weapons to D-Tap",
+        category = "Combat",
+        subcategory = "Mace D-Tap"
+    )
+    var maceDTap: Boolean = false
+
+    @Property(
+        PropertyType.SWITCH,
+        name = "Axe Priority",
+        description = "If the target is holding a shield, Ignores the first weapon and instead uses an Axe",
+        category = "Combat",
+        subcategory = "Mace D-Tap"
+    )
+    var axePriority: Boolean = true
+
+    @Property(
+        PropertyType.SELECTOR,
+        name = "First weapon",
+        description = "The first weapon to attack with",
+        options = ["Sword", "Axe", "Mace"],
+        category = "Combat",
+        subcategory = "Mace D-Tap"
+
+    )
+    var maceFirstWeapon: Int = 2
+
+    @Property(
+        PropertyType.SELECTOR,
+        name = "Second weapon",
+        description = "The first weapon to attack with",
+        options = ["Sword", "Axe", "Mace"],
+        category = "Combat",
+        subcategory = "Mace D-Tap"
+
+    )
+    var maceSecondWeapon: Int = 2
+
+    @Property(
+        PropertyType.SWITCH,
+        name = "Switch Only",
+        description = "Instead of trying to perform a D-Tap. Only switches for the property bug",
+        category = "Combat",
+        subcategory = "Mace D-Tap"
+    )
+    var switchOnly: Boolean = false
+
+    // Hitbox settings
     @Property(
         type = PropertyType.SWITCH,
         name = "Hitbox",
@@ -158,7 +221,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         subcategory = "Hitbox"
     )
     var HitboxEnabled: Boolean = false
-    // Hitbox settings
+
     @Property(
         type = PropertyType.DECIMAL_SLIDER,
         name = "Expand",
@@ -188,128 +251,23 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var hitboxMobs: Boolean = true
 
-    // Enhanced ESP Settings
     @Property(
         type = PropertyType.SWITCH,
-        name = "ESP",
-        description = "Enables entity ESP (see entities through walls)",
+        name = "Esp",
+        description = "Draws a box around players",
         category = "Render",
-        subcategory = "ESP"
+        subcategory = "Esp"
     )
-    var espEnabled: Boolean = false
-
-    @Property(
-        type = PropertyType.SELECTOR,
-        name = "ESP Type",
-        description = "Choose ESP rendering style",
-        category = "Render",
-        subcategory = "ESP",
-        options = ["Box", "Outline", "2D", "Health Bar", "Shaded", "Ring"]
-    )
-    var espType: Int = 0
-
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Render Players",
-        description = "Show ESP for player entities",
-        category = "Render",
-        subcategory = "ESP"
-    )
-    var espRenderPlayers: Boolean = true
-
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Render Mobs",
-        description = "Show ESP for mob entities",
-        category = "Render",
-        subcategory = "ESP"
-    )
-    var espRenderMobs: Boolean = false
-
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Render Items",
-        description = "Show ESP for item entities",
-        category = "Render",
-        subcategory = "ESP"
-    )
-    var espRenderItems: Boolean = false
-
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Render Invisible",
-        description = "Show ESP for invisible entities",
-        category = "Render",
-        subcategory = "ESP"
-    )
-    var espRenderInvisible: Boolean = false
-
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Render Self",
-        description = "Show ESP for your own player",
-        category = "Render",
-        subcategory = "ESP"
-    )
-    var espRenderSelf: Boolean = false
-
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Rainbow Color",
-        description = "Use rainbow colors for ESP",
-        category = "Render",
-        subcategory = "ESP"
-    )
-    var espRainbowColor: Boolean = false
-
-    @Property(
-        type = PropertyType.SLIDER,
-        name = "Render Distance",
-        description = "Maximum distance to render ESP (in blocks)",
-        category = "Render",
-        subcategory = "ESP",
-        min = 10,
-        max = 128
-    )
-    var espRenderDistance: Int = 64
-
-    @Property(
-        type = PropertyType.SLIDER,
-        name = "Line Width",
-        description = "Width of ESP outline/lines",
-        category = "Render",
-        subcategory = "ESP",
-        min = 1,
-        max = 5
-    )
-    var espLineWidth: Int = 2
-
+    var espEnabled: Boolean = true
     @Property(
         type = PropertyType.COLOR,
         name = "Player ESP Color",
         description = "Color for ESP rendering of players",
         category = "Render",
-        subcategory = "ESP Colors"
+        subcategory = "Esp"
     )
-    var espPlayerColor: Color = Color(0, 255, 0, 100)
+    var espPlayerColor: Color = Color(255, 255, 255, 255)
 
-    @Property(
-        type = PropertyType.COLOR,
-        name = "Mob ESP Color",
-        description = "Color for ESP rendering of mobs",
-        category = "Render",
-        subcategory = "ESP Colors"
-    )
-    var espMobColor: Color = Color(255, 0, 0, 100)
-
-    @Property(
-        type = PropertyType.COLOR,
-        name = "Item ESP Color",
-        description = "Color for ESP rendering of items",
-        category = "Render",
-        subcategory = "ESP Colors"
-    )
-    var espItemColor: Color = Color(0, 0, 255, 100)
 
 
 
@@ -379,9 +337,183 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var weaponSwapBack: Boolean = true
 
+    // Storage ESP Settings
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Storage ESP",
+        description = "Enables ESP highlighting for storage blocks",
+        category = "Render",
+        subcategory = "Storage ESP"
+    )
+    var storageEspEnabled: Boolean = false
+
+    @Property(
+        type = PropertyType.PERCENT_SLIDER,
+        name = "Opacity",
+        description = "Adjust the transparency of storage ESP highlights",
+        category = "Render",
+        subcategory = "Storage ESP"
+    )
+    var storageEspOpacity: Float = 0.4F
+
+
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Tracers",
+        description = "Draw lines from crosshair to storage blocks",
+        category = "Render",
+        subcategory = "Storage ESP"
+    )
+    var storageEspTracers: Boolean = false
+
+    // Chest ESP settings
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Chests/Barrels",
+        description = "Show ESP for regular chests and barrels",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var chestEspEnabled: Boolean = true
+
+    @Property(
+        type = PropertyType.COLOR,
+        name = "Chest Color",
+        description = "Color for chest/barrel ESP highlights",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var chestEspColor: Color = Color(184, 134, 11, 160) // Yellowish Brown
+
+    // Ender Chest ESP settings
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Ender Chests",
+        description = "Show ESP for ender chests",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var enderChestEspEnabled: Boolean = true
+
+    @Property(
+        type = PropertyType.COLOR,
+        name = "Ender Chest Color",
+        description = "Color for ender chest ESP highlights",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var enderChestEspColor: Color = Color(128, 0, 128, 160) // Purple
+
+    // Trapped Chest ESP settings
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Trapped Chests",
+        description = "Show ESP for trapped chests",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var trappedChestEspEnabled: Boolean = true
+
+    @Property(
+        type = PropertyType.COLOR,
+        name = "Trapped Chest Color",
+        description = "Color for trapped chest ESP highlights",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var trappedChestEspColor: Color = Color(255, 44, 44, 163) // Red
+
+    // Hopper ESP settings
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Hoppers",
+        description = "Show ESP for hoppers",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var hopperEspEnabled: Boolean = true
+
+    @Property(
+        type = PropertyType.COLOR,
+        name = "Hopper Color",
+        description = "Color for hopper ESP highlights",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var hopperEspColor: Color = Color(128, 128, 128, 160) // Grey
+
+    // Furnace ESP settings
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Furnaces",
+        description = "Show ESP for furnaces",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var furnaceEspEnabled: Boolean = true
+
+    @Property(
+        type = PropertyType.COLOR,
+        name = "Furnace Color",
+        description = "Color for furnace ESP highlights",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var furnaceEspColor: Color = Color(128, 128, 128, 160) // Grey
+
+    // Shulker ESP settings
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Shulker Boxes",
+        description = "Show ESP for shulker boxes",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var shulkerEspEnabled: Boolean = true
+
+    @Property(
+        type = PropertyType.COLOR,
+        name = "Shulker Color",
+        description = "Color for shulker box ESP highlights",
+        category = "Render",
+        subcategory = "Storage ESP Types"
+    )
+    var shulkerEspColor: Color = Color(245, 13, 222, 153) // Pink
+
     init {
         initialize()
+        // Storage ESP dependencies
+        addDependency("storageEspTracers", "storageEspEnabled")
 
+// Storage ESP type dependencies - these should only be active if the master switch is on
+        addDependency("chestEspEnabled", "storageEspEnabled")
+        addDependency("enderChestEspEnabled", "storageEspEnabled")
+        addDependency("trappedChestEspEnabled", "storageEspEnabled")
+        addDependency("hopperEspEnabled", "storageEspEnabled")
+        addDependency("furnaceEspEnabled", "storageEspEnabled")
+        addDependency("shulkerEspEnabled", "storageEspEnabled")
+
+// Color options should only be active if both the master switch and individual type are enabled
+        addDependency("chestEspColor", "chestEspEnabled")
+        addDependency("enderChestEspColor", "enderChestEspEnabled")
+        addDependency("trappedChestEspColor", "trappedChestEspEnabled")
+        addDependency("hopperEspColor", "hopperEspEnabled")
+        addDependency("furnaceEspColor", "furnaceEspEnabled")
+        addDependency("shulkerEspColor", "shulkerEspEnabled")
+
+// Set subcategory descriptions
+        setSubcategoryDescription(
+            "Render",
+            "Storage ESP",
+            "Highlight storage blocks like chests and containers"
+        )
+
+        setSubcategoryDescription(
+            "Render",
+            "Storage ESP Types",
+            "Configure which storage blocks to highlight"
+        )
         // TargetHUD dependencies
         addDependency("animations", "targetHudToggled")
         addDependency("offsetX", "targetHudToggled")
@@ -391,6 +523,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
 
         // Mace Dive dependencies
         addDependency("maceDiveKey", "maceDiveEnabled")
+        addDependency("fastMaceDiveKey","maceDiveEnabled")
         addDependency("groundDetectionHeight", "maceDiveEnabled")
         addDependency("attackMode", "maceDiveEnabled")
         addDependency("autoEquipElytra", "maceDiveEnabled")
@@ -404,24 +537,15 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("hitboxMobs", "HitboxEnabled")
 
         // ESP Dependencies
-        addDependency("espType", "espEnabled")
         addDependency("espRenderPlayers", "espEnabled")
-        addDependency("espRenderMobs", "espEnabled")
-        addDependency("espRenderItems", "espEnabled")
-        addDependency("espRenderInvisible", "espEnabled")
-        addDependency("espRenderSelf", "espEnabled")
-        addDependency("espRainbowColor", "espEnabled")
-        addDependency("espRenderDistance", "espEnabled")
-        addDependency("espLineWidth", "espEnabled")
         addDependency("espPlayerColor", "espEnabled")
-        addDependency("espMobColor", "espEnabled")
-        addDependency("espItemColor", "espEnabled")
+
 
 
 // Add this subcategory description in the init block
         setSubcategoryDescription(
             "Render",
-            "ESP",
+            "Esp",
             "Settings for the entity ESP module"
         )
         // Debug dependecies
@@ -431,6 +555,18 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("firstWeapon", "weaponSwapper")
         addDependency("secondWeapon", "weaponSwapper")
         addDependency("weaponSwapBack", "weaponSwapper")
+
+        setSubcategoryDescription(
+            "Combat",
+            "Mace D-Tap",
+            "Hits twice with 2 weapons to D-Tap"
+        )
+        // Mace D-Tap dependencies
+
+        addDependency("axePriority","maceDTap")
+        addDependency("maceFirstWeapon","maceDTap")
+        addDependency("maceSecondWeapon","maceDTap")
+        addDependency("switchOnly","maceDTap")
 
         setSubcategoryDescription(
             "Combat",
@@ -444,8 +580,8 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         )
         setSubcategoryDescription(
             "Render",
-            "ESP",
-            "See entities through walls with customizable boxes and tracers"
+            "Esp",
+            ""
         )
         setCategoryDescription(
             "Render",

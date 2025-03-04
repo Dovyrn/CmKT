@@ -1,6 +1,5 @@
 package com.logicalgeekboy.logical_zoom;
 
-import com.dov.seedsearch.SeedSearchMod;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.util.InputUtil;

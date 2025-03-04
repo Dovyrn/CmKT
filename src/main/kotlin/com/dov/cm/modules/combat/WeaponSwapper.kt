@@ -2,34 +2,24 @@ package com.dov.cm.modules.combat
 
 import com.dov.cm.config.Config
 import com.dov.cm.modules.UChat
-import kotlinx.coroutines.DelicateCoroutinesApi
 import net.minecraft.client.MinecraftClient
 import net.minecraft.entity.Entity
 import net.minecraft.item.ItemStack
 import net.minecraft.item.Items
-import net.minecraft.util.Hand
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 
 /**
- * Swaps weapons and attacks with proper cancellation
+ * Simple weapon swapper - swaps to second weapon without cancelling attack
  */
 object WeaponSwapper {
     private val mc: MinecraftClient = MinecraftClient.getInstance()
-    private var isSwapping = false
-    private var lastAttackTime = 0L
-    private var pendingTarget: Entity? = null
+    private var lastSwapTime = 0L
 
     fun init() {
         // Register tick event
         ClientTickEvents.END_CLIENT_TICK.register {
             // Skip if weapon swapper is disabled
             if (!Config.weaponSwapper) return@register
-
-            // Skip if we're already in the process of swapping
-            if (isSwapping) return@register
         }
 
         // Log initialization
@@ -41,31 +31,30 @@ object WeaponSwapper {
      * This is called from the mixin
      */
     fun shouldCancelAttack(target: Entity): Boolean {
-        // Skip if weapon swapper is disabled
-        if (!Config.weaponSwapper) return false
+        // We never want to cancel attacks
+        return false
+    }
 
-        // Skip if we're already in the process of swapping
-        if (isSwapping) return false
+    /**
+     * Attempt to swap weapons before attack
+     * This should be called from the attack mixin before the attack happens
+     */
+    fun trySwapWeapon() {
+        // Skip if weapon swapper is disabled
+        if (!Config.weaponSwapper) return
 
         // Don't trigger too frequently
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastAttackTime < 250) return false
+        if (currentTime - lastSwapTime < 250) return
 
         // Check if we're holding the first weapon type
         if (isHoldingWeaponType(Config.firstWeapon)) {
-            // Mark that we should handle this attack
-            lastAttackTime = currentTime
-            pendingTarget = target
+            // Mark that we processed this swap
+            lastSwapTime = currentTime
 
-            // Start weapon swap sequence
-            performWeaponSwap(target)
-
-            // Cancel the original attack
-            return true
+            // Find and swap to second weapon
+            swapToSecondWeapon()
         }
-
-        // Don't cancel if not holding the first weapon type
-        return false
     }
 
     /**
@@ -107,12 +96,10 @@ object WeaponSwapper {
     }
 
     /**
-     * Perform the weapon swap and attack sequence
+     * Swap to the second weapon type
      */
-    @OptIn(DelicateCoroutinesApi::class)
-    private fun performWeaponSwap(target: Entity) {
+    private fun swapToSecondWeapon() {
         val player = mc.player ?: return
-        val interactionManager = mc.interactionManager ?: return
 
         // Only proceed if we can find the second weapon
         val secondWeaponSlot = findWeaponInHotbar(Config.secondWeapon)
@@ -121,49 +108,8 @@ object WeaponSwapper {
             return
         }
 
-        // Remember the original slot
-        val originalSlot = player.inventory.selectedSlot
-
-        // Start the swapping process
-        isSwapping = true
-
-        GlobalScope.launch {
-            try {
-
-
-                // Swap to second weapon
-                mc.execute {
-                    player.inventory.selectedSlot = secondWeaponSlot
-                }
-
-
-
-                // Attack with second weapon
-                mc.execute {
-                    if (target.isAlive) {
-                        interactionManager.attackEntity(player, target)
-                        player.swingHand(Hand.MAIN_HAND)
-                    }
-                }
-
-                // Wait for animation
-                delay(150)
-
-                // Swap back to original slot if swap back is enabled
-                if (Config.weaponSwapBack) {
-                    mc.execute {
-                        player.inventory.selectedSlot = originalSlot
-                    }
-                }
-
-            } finally {
-                // Make sure we reset the swapping state
-                mc.execute {
-                    isSwapping = false
-                    pendingTarget = null
-                }
-            }
-        }
+        // Directly swap to second weapon
+        player.inventory.selectedSlot = secondWeaponSlot
     }
 
     /**

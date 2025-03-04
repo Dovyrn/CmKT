@@ -20,10 +20,13 @@ import net.minecraft.item.SwordItem
 import net.minecraft.item.AxeItem
 import net.minecraft.util.hit.HitResult
 import com.dov.cm.modules.UChat
+import net.minecraft.sound.SoundEvent
+import net.minecraft.sound.SoundEvents
 
 class MaceDive {
     private val mc = MinecraftClient.getInstance()
     private var isFlying = false
+    private var attacked = false
     private var initialY = 0.0
     private var elytraSlot = -1
     private var chestplateSlot = -1
@@ -61,7 +64,9 @@ class MaceDive {
      */
     fun onKeyPressed(keyChar: Char) {
         // Continue with normal checks first to avoid unnecessary processing
-        if (!Config.maceDiveEnabled || keyChar.toString().uppercase() != Config.maceDiveKey.uppercase()) {
+        if (!Config.maceDiveEnabled ||
+            (keyChar.toString().uppercase() != Config.maceDiveKey.uppercase() &&
+                    keyChar.toString().uppercase() != Config.fastMaceDiveKey.uppercase())) {
             return
         }
 
@@ -88,14 +93,62 @@ class MaceDive {
 
         UChat.mChat("§aMace Dive activated")
 
-        if (player.isOnGround) {
+        if ((player.isOnGround || isNearGround(1.5)) && keyChar.toString().uppercase() == Config.maceDiveKey.uppercase()) {
             // Player is on ground - launch sequence
+            UChat.mChat("Ground Launch Sequence")
             groundLaunchSequence()
-        } else {
+            monitorFlight()
+        }  else {
             // Player is in air - mid-air launch sequence
+            UChat.mChat("Air Launch Sequence")
             airLaunchSequence()
         }
     }
+
+
+
+    /**
+     * Find a sword in the hotbar
+     */
+
+
+    /**
+     * Find an axe in the hotbar
+     */
+    private fun findAxeSlot(): Int {
+        val player = mc.player ?: return -1
+
+        for (i in 0..8) {
+            val stack = player.inventory.getStack(i)
+            if (stack.item is AxeItem) {
+                return i
+            }
+        }
+        return -1
+    }
+    private fun isActivelyBlocking(entity: Entity): Boolean {
+        if (entity !is PlayerEntity) return false
+
+        // Check if the player is actively using an item
+        if (entity.isUsingItem()) {
+            // Get the item they're using
+            val activeItem = if (entity.activeHand == Hand.MAIN_HAND) {
+                entity.mainHandStack.item
+            } else {
+                entity.offHandStack.item
+            }
+
+            // Check if the item being used is a shield
+            if (activeItem == Items.SHIELD) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+
+
 
     /**
      * Check if the player is wearing a chestplate
@@ -119,6 +172,7 @@ class MaceDive {
         val chestStack = mc.player?.getEquippedStack(EquipmentSlot.CHEST) ?: return false
         return chestStack.item == Items.ELYTRA
     }
+
 
     /**
      * Launch sequence when player is on ground
@@ -158,19 +212,16 @@ class MaceDive {
                 // Switch to elytra slot and equip
                 player.inventory.selectedSlot = elytraSlot
                 interactionManager.interactItem(player, Hand.MAIN_HAND)
-                delay(100) // Give time for equipping
 
                 UChat.mChat("§aEquipped elytra for flight")
             } else if (isWearingElytraAlready) {
                 UChat.mChat("§aAlready wearing elytra")
             }
-
-            // First jump
-            jump()
-
-            // Wait before second jump
-            delay(200)
-
+            if (isNearGround(1.5)){
+                jump()
+                // Wait before second jump
+                delay(100)
+            }
             // Second jump to activate elytra
             jump()
 
@@ -181,7 +232,7 @@ class MaceDive {
                 return@launch
             }
             // Wait to fly
-            delay(100)
+            delay(50)
             // Use firework to boost
             useFirework()
 
@@ -196,7 +247,6 @@ class MaceDive {
             UChat.mChat("§aLaunched! Monitoring flight...")
 
             // Start monitoring for fall
-            monitorFlight()
         }
     }
 
@@ -247,7 +297,7 @@ class MaceDive {
             // Jump to activate elytra
             jump()
 
-            delay(200) // Wait for elytra activation
+            delay(100) // Wait for elytra activation
 
             // Verify elytra is equipped
             if (!isWearingElytra()) {
@@ -270,7 +320,7 @@ class MaceDive {
             UChat.mChat("§aLaunched! Monitoring ground proximity...")
 
             // Start monitoring for ground proximity immediately
-            monitorGroundProximity()
+            monitorGroundProximity(Config.maxHeight.toDouble())
         }
     }
 
@@ -288,7 +338,7 @@ class MaceDive {
             var initialAltitudeCheck = true
 
             // Add a short delay to allow player to gain some altitude first
-            delay(750)
+            delay(400)
 
             // Check if this session has been terminated during the delay
             if (sessionId != activeSessionId || !isFlying) {
@@ -344,7 +394,7 @@ class MaceDive {
                         UChat.mChat("§6Swapping elytra for chestplate...")
                     }
 
-                    monitorGroundProximity() // Start monitoring for ground proximity
+                    monitorGroundProximity(Config.groundDetectionHeight.toDouble()) // Start monitoring for ground proximity
                     break
                 }
 
@@ -363,7 +413,7 @@ class MaceDive {
      * Monitor proximity to ground for dive attack
      */
     @OptIn(DelicateCoroutinesApi::class)
-    private fun monitorGroundProximity() {
+    private fun monitorGroundProximity(height: Double) {
         // Capture current session ID to check for termination
         val sessionId = activeSessionId
 
@@ -378,7 +428,7 @@ class MaceDive {
                 }
 
                 // Check if we're close to the ground
-                if (isNearGround(Config.groundDetectionHeight.toDouble())) {
+                if (isNearGround(height.toDouble())) {
                     UChat.mChat("§6Ground proximity detected! Preparing for attack...")
                     prepareForAttack()
                     break
@@ -393,6 +443,7 @@ class MaceDive {
     @OptIn(DelicateCoroutinesApi::class)
     private fun prepareForAttack() {
         if (!isFlying) return
+        attacked = false
 
         // Capture current session ID to check for termination
         val sessionId = activeSessionId
@@ -430,18 +481,24 @@ class MaceDive {
                 UChat.mChat("§6Equipping mace...")
                 player.inventory.selectedSlot = maceSlot
             }
-            delay(200)
+            delay(50)
 
             // Attack based on selected mode
             when (Config.attackMode) {
                 0 -> UChat.mChat("§aAttack mode: None")
                 1 -> {
-                    UChat.mChat("§aAttack mode: TriggerBot")
-                    triggerBotAttack()
+                    while (!player.isOnGround && !attacked) {
+                        delay(10)
+                        triggerBotAttack()
+                    }
                 }
                 2 -> {
                     UChat.mChat("§aAttack mode: Silent")
-                    silentAttack()
+
+                    while (!player.isOnGround && !attacked){
+                        delay(10)
+                        silentAttack()
+                    }
                 }
             }
 
@@ -481,6 +538,7 @@ class MaceDive {
         // First try to attack what we're looking at
         if (mc.crosshairTarget?.type == HitResult.Type.ENTITY) {
             val hit = mc.crosshairTarget as EntityHitResult
+
             val entity = hit.entity
 
             if (entity != player && isValidTarget(entity)) {
@@ -488,18 +546,12 @@ class MaceDive {
                 interactionManager.attackEntity(player, entity)
                 player.swingHand(Hand.MAIN_HAND)
                 lastAttackTime = System.currentTimeMillis()
+                attacked = true
                 return
             }
         }
 
-        // If we couldn't hit what we're looking at, try the closest valid entity
-        if (targetEntities.isNotEmpty()) {
-            val closestEntity = targetEntities[0]
-            UChat.mChat("§aAttacking nearest entity: ${closestEntity.type.toString().split(".").last()}")
-            interactionManager.attackEntity(player, closestEntity)
-            player.swingHand(Hand.MAIN_HAND)
-            lastAttackTime = System.currentTimeMillis()
-        }
+
     }
 
     /**
@@ -535,7 +587,7 @@ class MaceDive {
         // Attack closest target
         targets.firstOrNull()?.let { target ->
             UChat.mChat("§aSilently attacking: ${target.type.toString().split(".").last()}")
-
+            attacked = true
             // Schedule rendering on the render thread
             targetToRender = target  // Store the target in a class field
 

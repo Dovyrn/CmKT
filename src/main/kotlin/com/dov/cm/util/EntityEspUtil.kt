@@ -1,145 +1,84 @@
 package com.dov.cm.util
 
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.block.Block
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gl.ShaderProgramKeys
-import net.minecraft.client.render.*
+import net.minecraft.client.render.BufferRenderer
+import net.minecraft.client.render.Camera
+import net.minecraft.client.render.VertexFormat
+import net.minecraft.client.render.VertexFormats
+import net.minecraft.client.render.VertexConsumer
 import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.util.math.BlockPos
+import net.minecraft.entity.Entity
 import net.minecraft.util.math.Box
 import net.minecraft.util.math.Vec3d
 import org.lwjgl.opengl.GL11
 import java.awt.Color
 
-
 /**
- * Utility class for rendering block ESP in Minecraft with Kotlin
- * Fixed to prevent OpenGL 1281 errors in 1.21.4
+ * Utility class for rendering entity ESP in Minecraft with Kotlin
+ * Updated for 1.21.4 rendering pipeline with proper transparency
  */
-object BlockEspUtil {
+object EntityEspUtil {
     private val MC = MinecraftClient.getInstance()
 
-
     /**
-     * Renders a block ESP at the specified coordinates with the given color
+     * Renders ESP around an entity with the given color
      */
-    fun renderBlock(
-        x: Int,
-        y: Int,
-        z: Int,
+    fun renderEntity(
+        entity: Entity,
         color: Color,
         lineWidth: Float = 2f,
         filled: Boolean = false,
         outlined: Boolean = true,
-        fillOpacity: Float = 0.25f
+        fillOpacity: Float = 0.25f,
+        expand: Float = 0f
     ) {
-        renderBox(Box(
-            x.toDouble(),
-            y.toDouble(),
-            z.toDouble(),
-            (x + 1).toDouble(),
-            (y + 1).toDouble(),
-            (z + 1).toDouble()
-        ), color, lineWidth, filled, outlined, fillOpacity)
-    }
+        try {
+            // Get entity's bounding box and expand if needed
+            val box = entity.boundingBox.expand(expand.toDouble())
 
-    /**
-     * Renders a block ESP at the specified BlockPos with the given color
-     */
-    fun renderBlock(
-        pos: BlockPos,
-        color: Color,
-        lineWidth: Float = 2f,
-        filled: Boolean = false,
-        outlined: Boolean = true,
-        fillOpacity: Float = 0.25f
-    ) {
-        renderBlock(pos.x, pos.y, pos.z, color, lineWidth, filled, outlined, fillOpacity)
-    }
-
-    /**
-     * Renders a block ESP for all instances of the specified block with the given color
-     */
-    fun renderAllBlocks(
-        block: Block,
-        color: Color,
-        radius: Int = 50,
-        lineWidth: Float = 2f,
-        filled: Boolean = false,
-        outlined: Boolean = true,
-        fillOpacity: Float = 0.25f
-    ) {
-        val player = MC.player ?: return
-        val playerPos = player.blockPos
-
-        val xRange = (playerPos.x - radius)..(playerPos.x + radius)
-        val yRange = (playerPos.y - radius)..(playerPos.y + radius)
-        val zRange = (playerPos.z - radius)..(playerPos.z + radius)
-
-        for (x in xRange) {
-            for (y in yRange) {
-                for (z in zRange) {
-                    val pos = BlockPos(x, y, z)
-                    if (MC.world?.getBlockState(pos)?.block == block) {
-                        renderBlock(pos, color, lineWidth, filled, outlined, fillOpacity)
-                    }
-                }
-            }
+            // Render the box
+            renderBoxSafe(box, color, lineWidth, filled, outlined, fillOpacity)
+        } catch (e: Exception) {
+            // Silently handle any rendering errors to prevent crashes
         }
     }
 
     /**
-     * Renders a box with the given parameters
+     * Renders a box with the given parameters using safer methods for 1.21.4
      */
-    fun renderBox(
+    fun renderBoxSafe(
         box: Box,
         color: Color,
-        lineWidth: Float,
+        lineWidth: Float = 2f,
         filled: Boolean = false,
         outlined: Boolean = true,
         fillOpacity: Float = 0.25f
     ) {
-        // Comprehensive rendering context checks
-        val camera = MC.gameRenderer?.camera
-        val world = MC.world
-        val player = MC.player
+        // Get render context
+        val matrixStack = MatrixStack()
+        val camera = MC.gameRenderer.camera ?: return
 
-        if (camera == null || world == null || player == null) {
-            return  // Exit early if any core rendering context is missing
-        }
-
-        // Prevent rendering if too far from the player
-        val renderDistance = MC.options.viewDistance.value * 16.0
-        val playerPos = player.pos
-        val boxCenter = Vec3d(
-            (box.minX + box.maxX) / 2.0,
-            (box.minY + box.maxY) / 2.0,
-            (box.minZ + box.maxZ) / 2.0
-        )
-
-        if (playerPos.squaredDistanceTo(boxCenter) > renderDistance * renderDistance) {
-            return
-        }
+        // Apply camera offset
+        val camPos = getCameraPos(camera)
+        matrixStack.push()
+        matrixStack.translate((-camPos.x).toFloat(), (-camPos.y).toFloat(), (-camPos.z).toFloat())
 
         // Make sure we're on the render thread
         if (!RenderSystem.isOnRenderThread()) {
+            matrixStack.pop()
             return
         }
 
-        // Get render context
-        val matrixStack = MatrixStack()
-
         try {
-            // Apply camera offset
-            val camPos = getCameraPos(camera)
-            matrixStack.push()
-            matrixStack.translate((-camPos.x).toFloat(), (-camPos.y).toFloat(), (-camPos.z).toFloat())
-
-            // Set up render state for transparency
+            // Set up render state for 1.21.4
             RenderSystem.enableBlend()
-            RenderSystem.defaultBlendFunc() // Key fix for proper transparency in 1.21.4
             RenderSystem.disableCull()
+
+            // Key fix for 1.21.4 - use overlay blend function for proper transparency
+            //RenderSystem.overlayBlendFunc()
+
 
             // Only disable depth test temporarily
             val depthEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST)
@@ -147,7 +86,7 @@ object BlockEspUtil {
                 RenderSystem.disableDepthTest()
             }
 
-            // Use the correct shader for 1.21.4
+            // In 1.21.4, we use ShaderProgramKeys for the position shader
             RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR)
 
             // Draw filled box if requested
@@ -166,12 +105,14 @@ object BlockEspUtil {
                     val b = fillColor.blue / 255f
                     val a = fillColor.alpha / 255f
 
-                    // Draw box with proper color attributes
+                    // Use the safer tessellator approach
                     val tessellator = RenderSystem.renderThreadTesselator()
                     val buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR)
 
+                    // Draw each face of the box with color
                     drawBoxFacesWithColor(box, matrixStack, buffer, r, g, b, a)
 
+                    // End and draw
                     BufferRenderer.drawWithGlobalProgram(buffer.end())
                 } catch (e: Exception) {
                     // Handle silently
@@ -188,7 +129,7 @@ object BlockEspUtil {
                     val a = color.alpha / 255f
 
                     // Safe line width setting
-                    RenderSystem.lineWidth(lineWidth.coerceIn(1F, 10F))
+                    RenderSystem.lineWidth(lineWidth.coerceIn(1f, 3f))
 
                     // Draw box outline with color
                     val tessellator = RenderSystem.renderThreadTesselator()
@@ -196,6 +137,7 @@ object BlockEspUtil {
 
                     drawBoxOutlineWithColor(box, matrixStack, buffer, r, g, b, a)
 
+                    // End and draw
                     BufferRenderer.drawWithGlobalProgram(buffer.end())
                 } catch (e: Exception) {
                     // Handle silently
@@ -209,11 +151,8 @@ object BlockEspUtil {
             RenderSystem.enableCull()
             RenderSystem.defaultBlendFunc() // Reset blend function
             RenderSystem.disableBlend()
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
-
         } catch (e: Exception) {
-            // Graceful error handling
-            println("Error in Block ESP rendering: ${e.message}")
+            // Catch any unexpected errors
         } finally {
             // Always restore matrix state
             matrixStack.pop()
@@ -239,40 +178,40 @@ object BlockEspUtil {
         val matrix = matrixStack.peek().positionMatrix
 
         // Bottom face
-        buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a)
+        buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a);
 
 // Top face
-        buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a)
+        buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a);
 
 // Front face
-        buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a)
+        buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a);
 
 // Back face
-        buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a)
+        buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a);
 
 // Left face
-        buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a)
+        buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a);
 
 // Right face
-        buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a)
-        buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a)
+        buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a);
+        buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a);
 
     }
 
@@ -307,7 +246,7 @@ object BlockEspUtil {
         buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a)
         buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a)
 
-// Top rectangle
+        // Top rectangle
         buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a)
         buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a)
 
@@ -320,7 +259,7 @@ object BlockEspUtil {
         buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a)
         buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a)
 
-// Connecting pillars
+        // Connecting pillars
         buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a)
         buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a)
 
@@ -332,7 +271,6 @@ object BlockEspUtil {
 
         buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a)
         buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a)
-
     }
 
     /**
