@@ -81,6 +81,15 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     var maceDiveEnabled: Boolean = false
 
     @Property(
+        type = PropertyType.SWITCH,
+        name = "Swap Packet",
+        description = "Sends a packet to swap slots easier",
+        category = "Combat",
+        subcategory = "Mace Dive"
+    )
+    var SwapPacket: Boolean = false
+
+    @Property(
         type = PropertyType.TEXT,
         name = "Mace Keybind",
         description = "Key to activate Mace Dive (single character)",
@@ -90,15 +99,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var maceDiveKey: String = "V"
 
-    @Property(
-        type = PropertyType.TEXT,
-        name = "Fast Mace Keybind",
-        description = "Key to activate Fast Mace Dive (single character)",
-        category = "Combat",
-        subcategory = "Mace Dive",
-        placeholder = "Enter a key"
-    )
-    var fastMaceDiveKey: String = "R"
+
 
     @Property(
         type = PropertyType.SLIDER,
@@ -259,6 +260,16 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         subcategory = "Esp"
     )
     var espEnabled: Boolean = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Render Players",
+        description = "Show ESP for players",
+        category = "Render",
+        subcategory = "Esp"
+    )
+    var espRenderPlayers: Boolean = true
+
     @Property(
         type = PropertyType.COLOR,
         name = "Player ESP Color",
@@ -267,10 +278,6 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         subcategory = "Esp"
     )
     var espPlayerColor: Color = Color(255, 255, 255, 255)
-
-
-
-
 
     // Chams Settings
     @Property(
@@ -355,8 +362,6 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         subcategory = "Storage ESP"
     )
     var storageEspOpacity: Float = 0.4F
-
-
 
     @Property(
         type = PropertyType.SWITCH,
@@ -486,7 +491,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         // Storage ESP dependencies
         addDependency("storageEspTracers", "storageEspEnabled")
 
-// Storage ESP type dependencies - these should only be active if the master switch is on
+        // Storage ESP type dependencies - these should only be active if the master switch is on
         addDependency("chestEspEnabled", "storageEspEnabled")
         addDependency("enderChestEspEnabled", "storageEspEnabled")
         addDependency("trappedChestEspEnabled", "storageEspEnabled")
@@ -494,7 +499,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("furnaceEspEnabled", "storageEspEnabled")
         addDependency("shulkerEspEnabled", "storageEspEnabled")
 
-// Color options should only be active if both the master switch and individual type are enabled
+        // Color options should only be active if both the master switch and individual type are enabled
         addDependency("chestEspColor", "chestEspEnabled")
         addDependency("enderChestEspColor", "enderChestEspEnabled")
         addDependency("trappedChestEspColor", "trappedChestEspEnabled")
@@ -502,7 +507,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("furnaceEspColor", "furnaceEspEnabled")
         addDependency("shulkerEspColor", "shulkerEspEnabled")
 
-// Set subcategory descriptions
+        // Set subcategory descriptions
         setSubcategoryDescription(
             "Render",
             "Storage ESP",
@@ -514,6 +519,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
             "Storage ESP Types",
             "Configure which storage blocks to highlight"
         )
+
         // TargetHUD dependencies
         addDependency("animations", "targetHudToggled")
         addDependency("offsetX", "targetHudToggled")
@@ -523,7 +529,6 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
 
         // Mace Dive dependencies
         addDependency("maceDiveKey", "maceDiveEnabled")
-        addDependency("fastMaceDiveKey","maceDiveEnabled")
         addDependency("groundDetectionHeight", "maceDiveEnabled")
         addDependency("attackMode", "maceDiveEnabled")
         addDependency("autoEquipElytra", "maceDiveEnabled")
@@ -540,15 +545,14 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("espRenderPlayers", "espEnabled")
         addDependency("espPlayerColor", "espEnabled")
 
-
-
-// Add this subcategory description in the init block
+        // Add this subcategory description in the init block
         setSubcategoryDescription(
             "Render",
             "Esp",
             "Settings for the entity ESP module"
         )
-        // Debug dependecies
+
+        // Debug dependencies
         addDependency("debugMessages", "developerMode")
 
         // Weapon Swapper dependencies
@@ -561,8 +565,8 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
             "Mace D-Tap",
             "Hits twice with 2 weapons to D-Tap"
         )
-        // Mace D-Tap dependencies
 
+        // Mace D-Tap dependencies
         addDependency("axePriority","maceDTap")
         addDependency("maceFirstWeapon","maceDTap")
         addDependency("maceSecondWeapon","maceDTap")
@@ -578,11 +582,13 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
             "Developer",
             "Stuff for debugging the mod"
         )
+
         setSubcategoryDescription(
             "Render",
             "Esp",
-            ""
+            "Settings for the entity ESP module"
         )
+
         setCategoryDescription(
             "Render",
             "Rendering stuff"
@@ -596,18 +602,19 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         setSubcategoryDescription(
             "Render",
             "TargetHUD",
-            ""
+            "Display information about your current target"
         )
 
         setSubcategoryDescription(
             "Combat",
             "Mace Dive",
-            ""
+            "Quick aerial attacks using mace and elytra"
         )
+
         setSubcategoryDescription(
             "Combat",
             "Hitbox",
-            ""
+            "Expand entity hitboxes for easier targeting"
         )
     }
 }

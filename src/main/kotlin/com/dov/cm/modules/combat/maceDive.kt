@@ -20,8 +20,9 @@ import net.minecraft.item.SwordItem
 import net.minecraft.item.AxeItem
 import net.minecraft.util.hit.HitResult
 import com.dov.cm.modules.UChat
-import net.minecraft.sound.SoundEvent
-import net.minecraft.sound.SoundEvents
+import net.minecraft.item.ItemStack
+import net.minecraft.screen.slot.SlotActionType
+
 
 class MaceDive {
     private val mc = MinecraftClient.getInstance()
@@ -31,6 +32,7 @@ class MaceDive {
     private var elytraSlot = -1
     private var chestplateSlot = -1
     private var maceSlot = -1
+    private var fireworkSlot = -1
     private var lastAttackTime = 0L
     private var lastSwapAttempt = 0L
     // Debounce protection
@@ -38,6 +40,8 @@ class MaceDive {
     private val DEBOUNCE_TIME = 500L // 500ms (adjust as needed)
     // For tracking active sessions
     private var activeSessionId = 0
+    // New configuration for packet swapping
+    private var swapPacket = Config.SwapPacket // Default to true for faster swapping
 
     /**
      * Initialize the Mace Dive module
@@ -65,8 +69,7 @@ class MaceDive {
     fun onKeyPressed(keyChar: Char) {
         // Continue with normal checks first to avoid unnecessary processing
         if (!Config.maceDiveEnabled ||
-            (keyChar.toString().uppercase() != Config.maceDiveKey.uppercase() &&
-                    keyChar.toString().uppercase() != Config.fastMaceDiveKey.uppercase())) {
+            (keyChar.toString().uppercase() != Config.maceDiveKey.uppercase())) {
             return
         }
 
@@ -78,6 +81,24 @@ class MaceDive {
         if (currentTime - lastKeyPressTime < DEBOUNCE_TIME) {
             UChat.mChat("§cMace Dive on cooldown (${((DEBOUNCE_TIME - (currentTime - lastKeyPressTime)) / 1000.0).toInt()}s)")
             return
+        }
+
+        // If swapPacket is false, check if we have required items in hotbar before proceeding
+        if (!swapPacket) {
+            val hasElytra = findItemInHotbar(Items.ELYTRA) != -1 || isWearingElytra()
+            val hasChestplate = findChestplateSlot() != -1
+            val hasWeapon = findMaceSlotLegacy() != -1
+
+            // Need an elytra (or wearing one), a chestplate AND a weapon
+            val hasRequiredItems = hasElytra && hasChestplate && hasWeapon
+
+            if (!hasRequiredItems) {
+                UChat.mChat("§cMissing required items in hotbar for Mace Dive")
+                if (!hasElytra) UChat.mChat("§c- Missing Elytra")
+                if (!hasChestplate) UChat.mChat("§c- Missing Chestplate")
+                if (!hasWeapon) UChat.mChat("§c- Missing Weapon (Mace/Sword/Axe)")
+                return
+            }
         }
 
         // Update last key press time
@@ -106,26 +127,117 @@ class MaceDive {
     }
 
 
-
     /**
-     * Find a sword in the hotbar
+     * Find an item in the hotbar only (legacy method, for fallback use)
      */
-
-
-    /**
-     * Find an axe in the hotbar
-     */
-    private fun findAxeSlot(): Int {
+    private fun findItemInHotbar(item: net.minecraft.item.Item): Int {
         val player = mc.player ?: return -1
 
         for (i in 0..8) {
             val stack = player.inventory.getStack(i)
-            if (stack.item is AxeItem) {
+            if (stack.item == item) {
                 return i
             }
         }
         return -1
     }
+
+    /**
+     * Find a chestplate in the hotbar only (legacy method, for fallback use)
+     */
+    private fun findChestplateSlot(): Int {
+        val player = mc.player ?: return -1
+
+        for (i in 0..8) {
+            val stack = player.inventory.getStack(i)
+            val item = stack.item
+            if (item == Items.NETHERITE_CHESTPLATE ||
+                item == Items.DIAMOND_CHESTPLATE ||
+                item == Items.IRON_CHESTPLATE ||
+                item == Items.GOLDEN_CHESTPLATE ||
+                item == Items.CHAINMAIL_CHESTPLATE ||
+                item == Items.LEATHER_CHESTPLATE) {
+                return i
+            }
+        }
+        return -1
+    }
+    /**
+     * Finds a specific item in the player's inventory and instantly swaps it to the hotbar using packets.
+     *
+     * @param itemPredicate A predicate to match the desired item
+     * @param hotbarSlot The hotbar slot to swap to (0-8)
+     * @return True if the item was found and swapped, false otherwise
+     */
+    fun findAndSwapToHotbar(itemPredicate: (ItemStack) -> Boolean, hotbarSlot: Int = 0): Boolean {
+        val client = MinecraftClient.getInstance()
+        val player = client.player ?: return false
+        val inventory = player.inventory
+
+        // Ensure hotbar slot is valid (0-8)
+        val targetHotbarSlot = hotbarSlot.coerceIn(0, 8)
+
+        // Search for the item in the main inventory (excluding hotbar)
+        // Main inventory slots are 9-35
+        for (i in 9 until 36) {
+            val stack = inventory.getStack(i)
+            if (!stack.isEmpty && itemPredicate(stack)) {
+                // Found the item, now swap it using a packet
+                val screenHandler = player.currentScreenHandler
+                client.interactionManager?.clickSlot(
+                    screenHandler.syncId,      // Sync ID of current screen handler
+                    i,                         // Slot where the item was found
+                    targetHotbarSlot,          // Hotbar slot to swap with
+                    SlotActionType.SWAP,       // SWAP action type for hotbar swap
+                    player                     // The player
+                )
+
+                return true
+            }
+        }
+
+        return false // Item not found
+    }
+
+    /**
+     * Enhanced item switching that respects the swapPacket flag
+     * @param predicate Function to identify the desired item
+     * @return Slot number in hotbar, or -1 if not found
+     */
+    private fun findAndEquipItem(predicate: (ItemStack) -> Boolean): Int {
+        val player = mc.player ?: return -1
+        val currentSlot = player.inventory.selectedSlot
+
+        // First check if the item is already in the hotbar
+        for (i in 0..8) {
+            val stack = player.inventory.getStack(i)
+            if (!stack.isEmpty && predicate(stack)) {
+                return i // Item found in hotbar
+            }
+        }
+
+        // If swapPacket is true, try to swap from inventory using packets
+        if (swapPacket) {
+            if (findAndSwapToHotbar(predicate, currentSlot)) {
+                UChat.mChat("§aSwapped item to current slot using packet")
+                return currentSlot
+            }
+        } else {
+            // If swapPacket is false, we should NOT look for items in the inventory
+            // Only return hotbar items in this case
+            UChat.mChat("§6Packet swapping disabled, only checking hotbar")
+        }
+
+        return -1 // Item not found in accessible inventory slots
+    }
+
+    /**
+     * Find an axe in the hotbar
+     */
+    private fun findAxeSlot(): Int {
+        return findAndEquipItem { it.item is AxeItem }
+    }
+
     private fun isActivelyBlocking(entity: Entity): Boolean {
         if (entity !is PlayerEntity) return false
 
@@ -146,9 +258,6 @@ class MaceDive {
 
         return false
     }
-
-
-
 
     /**
      * Check if the player is wearing a chestplate
@@ -173,7 +282,6 @@ class MaceDive {
         return chestStack.item == Items.ELYTRA
     }
 
-
     /**
      * Launch sequence when player is on ground
      */
@@ -192,31 +300,45 @@ class MaceDive {
                 return@launch
             }
 
-            // Find equipment slots
-            elytraSlot = findItemInHotbar(Items.ELYTRA)
-            chestplateSlot = findChestplateSlot()
-            maceSlot = findMaceSlot()
+            // Get current slot so we can return to it later
+            val currentSlot = player.inventory.selectedSlot
 
             // Check current equipment state
             val isWearingElytraAlready = isWearingElytra()
-            isWearingChestplate()
-            val currentSlot = player.inventory.selectedSlot
 
             // Handle elytra equipment if needed
             if (!isWearingElytraAlready && Config.autoEquipElytra) {
+                if (swapPacket) {
+                    // Use enhanced method with packet swapping
+                    elytraSlot = findAndEquipItem { it.item == Items.ELYTRA }
+                } else {
+                    // Legacy hotbar-only method when packet swapping is disabled
+                    elytraSlot = findItemInHotbar(Items.ELYTRA)
+                }
+
                 if (elytraSlot == -1) {
-                    UChat.mChat("§cNo elytra found in hotbar!")
+                    if (swapPacket) {
+                        UChat.mChat("§cNo elytra found in inventory!")
+                    } else {
+                        UChat.mChat("§cNo elytra found in hotbar!")
+                    }
                     return@launch
                 }
 
-                // Switch to elytra slot and equip
-                player.inventory.selectedSlot = elytraSlot
+                // Switch to elytra slot if different from current
+                if (elytraSlot != player.inventory.selectedSlot) {
+                    player.inventory.selectedSlot = elytraSlot
+                }
+
+                // Equip elytra
                 interactionManager.interactItem(player, Hand.MAIN_HAND)
+                delay(100) // Small delay for equipping
 
                 UChat.mChat("§aEquipped elytra for flight")
             } else if (isWearingElytraAlready) {
                 UChat.mChat("§aAlready wearing elytra")
             }
+
             if (isNearGround(1.5)){
                 jump()
                 // Wait before second jump
@@ -231,8 +353,10 @@ class MaceDive {
                 player.inventory.selectedSlot = currentSlot
                 return@launch
             }
+
             // Wait to fly
             delay(50)
+
             // Use firework to boost
             useFirework()
 
@@ -268,24 +392,33 @@ class MaceDive {
                 return@launch
             }
 
-            // Find equipment slots
-            elytraSlot = findItemInHotbar(Items.ELYTRA)
-            chestplateSlot = findChestplateSlot()
-            maceSlot = findMaceSlot()
-
             // Check current equipment state
             val isWearingElytraAlready = isWearingElytra()
             val currentSlot = player.inventory.selectedSlot
 
             // Handle elytra equipment if needed
             if (!isWearingElytraAlready && Config.autoEquipElytra) {
+                // Find elytra based on swapPacket setting
+                if (swapPacket) {
+                    elytraSlot = findAndEquipItem { it.item == Items.ELYTRA }
+                } else {
+                    elytraSlot = findItemInHotbar(Items.ELYTRA)
+                }
+
                 if (elytraSlot == -1) {
-                    UChat.mChat("§cNo elytra found in hotbar!")
+                    if (swapPacket) {
+                        UChat.mChat("§cNo elytra found in inventory!")
+                    } else {
+                        UChat.mChat("§cNo elytra found in hotbar!")
+                    }
                     return@launch
                 }
 
-                // Switch to elytra slot and equip
-                player.inventory.selectedSlot = elytraSlot
+                // Switch to elytra slot if needed
+                if (elytraSlot != player.inventory.selectedSlot) {
+                    player.inventory.selectedSlot = elytraSlot
+                }
+
                 interactionManager.interactItem(player, Hand.MAIN_HAND)
                 delay(100) // Give time for equipping
 
@@ -376,9 +509,6 @@ class MaceDive {
                     maxAltitudeReached = currentY
                 }
 
-                // Update chestplate slot in case inventory changed
-                chestplateSlot = findChestplateSlot()
-
                 // Check if we've reached max height or started falling
                 val reachedMaxHeight = currentY >= initialY + Config.maxHeight
                 val reachedApex = verticalVelocity < 0.05 && currentY > initialY + 10 // We've peaked and started descending
@@ -387,11 +517,34 @@ class MaceDive {
                 if (reachedMaxHeight || reachedApex) {
                     UChat.mChat("§6Beginning descent from height ${(maxAltitudeReached - initialY).toInt()} blocks")
 
-                    // Only swap to chestplate if player is wearing elytra
-                    if (Config.autoSwapChestplate && chestplateSlot != -1 && isWearingElytra()) {
-                        player.inventory.selectedSlot = chestplateSlot
-                        mc.interactionManager?.interactItem(player, Hand.MAIN_HAND)
-                        UChat.mChat("§6Swapping elytra for chestplate...")
+                    // Prepare chestplate in advance
+                    if (Config.autoSwapChestplate && isWearingElytra()) {
+                        // Find chestplate based on swapPacket setting
+                        if (swapPacket) {
+                            chestplateSlot = findAndEquipItem { stack ->
+                                val item = stack.item
+                                item == Items.NETHERITE_CHESTPLATE ||
+                                        item == Items.DIAMOND_CHESTPLATE ||
+                                        item == Items.IRON_CHESTPLATE ||
+                                        item == Items.GOLDEN_CHESTPLATE ||
+                                        item == Items.CHAINMAIL_CHESTPLATE ||
+                                        item == Items.LEATHER_CHESTPLATE
+                            }
+                        } else {
+                            chestplateSlot = findChestplateSlot() // Legacy hotbar-only method
+                            if (chestplateSlot == -1) {
+                                UChat.mChat("§cNo chestplate found in hotbar!")
+                                UChat.mChat("§cContinuing without chestplate...")
+                            }
+                        }
+
+                        if (chestplateSlot != -1) {
+                            player.inventory.selectedSlot = chestplateSlot
+                            mc.interactionManager?.interactItem(player, Hand.MAIN_HAND)
+                            UChat.mChat("§6Swapping elytra for chestplate...")
+                        } else if (swapPacket) {
+                            UChat.mChat("§cNo chestplate found in inventory!")
+                        }
                     }
 
                     monitorGroundProximity(Config.groundDetectionHeight.toDouble()) // Start monitoring for ground proximity
@@ -457,30 +610,79 @@ class MaceDive {
             val player = mc.player ?: return@launch
             val interactionManager = mc.interactionManager ?: return@launch
 
-            // Update equipment slots
-            chestplateSlot = findChestplateSlot()
-            maceSlot = findMaceSlot()
-
             // Swap to chestplate if enabled and we're wearing elytra
-            if (Config.autoSwapChestplate && chestplateSlot != -1 && isWearingElytra()) {
-                // Record the time of this attempt
-                lastSwapAttempt = System.currentTimeMillis()
+            if (Config.autoSwapChestplate && isWearingElytra()) {
+                // Find chestplate based on swapPacket setting
+                if (swapPacket) {
+                    chestplateSlot = findAndEquipItem { stack ->
+                        val item = stack.item
+                        item == Items.NETHERITE_CHESTPLATE ||
+                                item == Items.DIAMOND_CHESTPLATE ||
+                                item == Items.IRON_CHESTPLATE ||
+                                item == Items.GOLDEN_CHESTPLATE ||
+                                item == Items.CHAINMAIL_CHESTPLATE ||
+                                item == Items.LEATHER_CHESTPLATE
+                    }
+                } else {
+                    chestplateSlot = findChestplateSlot() // Legacy hotbar-only method
+                }
 
-                UChat.mChat("§6Swapping to chestplate...")
-                player.inventory.selectedSlot = chestplateSlot
+                if (chestplateSlot != -1) {
+                    // Record the time of this attempt
+                    lastSwapAttempt = System.currentTimeMillis()
 
-                // Try multiple times to ensure it works
-                for (attempt in 1..3) {
-                    interactionManager.interactItem(player, Hand.MAIN_HAND)
-                    delay(25)
+                    UChat.mChat("§6Swapping to chestplate...")
+                    player.inventory.selectedSlot = chestplateSlot
+
+                    // Try multiple times to ensure it works
+                    for (attempt in 1..3) {
+                        interactionManager.interactItem(player, Hand.MAIN_HAND)
+                        delay(25)
+                    }
+                } else {
+                    if (swapPacket) {
+                        UChat.mChat("§cNo chestplate found in inventory!")
+                    } else {
+                        UChat.mChat("§cNo chestplate found in hotbar!")
+                        UChat.mChat("§cContinuing without chestplate...")
+                    }
                 }
             }
 
-            // Swap to mace if available
+            // Find and swap to mace using the appropriate method
+            if (swapPacket) {
+                maceSlot = findMaceSlotEnhanced()
+            } else {
+                // Legacy method for finding mace in hotbar only
+                maceSlot = findMaceSlotLegacy()
+            }
+
             if (maceSlot != -1) {
                 UChat.mChat("§6Equipping mace...")
                 player.inventory.selectedSlot = maceSlot
+            } else {
+                if (swapPacket) {
+                    UChat.mChat("§cNo mace or weapon found in inventory!")
+                } else {
+                    UChat.mChat("§cNo mace or weapon found in hotbar!")
+                    UChat.mChat("§cTerminating attack sequence due to missing weapon")
+                    isFlying = false
+                    return@launch
+                }
             }
+
+            delay(50)
+
+            // Find and swap to mace using new method
+            maceSlot = findMaceSlotEnhanced()
+
+            if (maceSlot != -1) {
+                UChat.mChat("§6Equipping mace...")
+                player.inventory.selectedSlot = maceSlot
+            } else {
+                UChat.mChat("§cNo mace or weapon found in inventory!")
+            }
+
             delay(50)
 
             // Attack based on selected mode
@@ -550,8 +752,6 @@ class MaceDive {
                 return
             }
         }
-
-
     }
 
     /**
@@ -604,8 +804,6 @@ class MaceDive {
     // Class field to store the target
     private var targetToRender: Entity? = null
 
-
-
     /**
      * Check if player is near ground with improved detection
      */
@@ -639,16 +837,26 @@ class MaceDive {
     }
 
     /**
-     * Use firework for boost
+     * Use firework for boost - respects swapPacket setting
      */
+    @OptIn(DelicateCoroutinesApi::class)
     private suspend fun useFirework() {
         val player = mc.player ?: return
         val interactionManager = mc.interactionManager ?: return
+        val currentSlot = player.inventory.selectedSlot
 
-        val fireworkSlot = findItemInHotbar(Items.FIREWORK_ROCKET)
+        // Find firework based on swapPacket setting
+        fireworkSlot = if (swapPacket) {
+            findAndEquipItem { it.item == Items.FIREWORK_ROCKET }
+        } else {
+            findItemInHotbar(Items.FIREWORK_ROCKET)
+        }
+
         if (fireworkSlot != -1) {
-            val currentSlot = player.inventory.selectedSlot
-            player.inventory.selectedSlot = fireworkSlot
+            // Check if we need to switch slots
+            if (fireworkSlot != player.inventory.selectedSlot) {
+                player.inventory.selectedSlot = fireworkSlot
+            }
 
             // Use firework based on boost strength
             for (i in 1..Config.boostStrength) {
@@ -656,52 +864,27 @@ class MaceDive {
                 delay(50) // Small delay between fireworks
             }
 
+            // Switch back to original slot
             player.inventory.selectedSlot = currentSlot
         } else {
-            UChat.mChat("§cNo fireworks found in hotbar!")
-        }
-    }
-
-    /**
-     * Find an item in the hotbar
-     */
-    private fun findItemInHotbar(item: net.minecraft.item.Item): Int {
-        val player = mc.player ?: return -1
-
-        for (i in 0..8) {
-            val stack = player.inventory.getStack(i)
-            if (stack.item == item) {
-                return i
+            if (swapPacket) {
+                UChat.mChat("§cNo fireworks found in inventory!")
+            } else {
+                UChat.mChat("§cNo fireworks found in hotbar!")
+            }
+            // If swapPacket is false and we didn't find fireworks in hotbar, exit the launch sequence
+            if (!swapPacket) {
+                UChat.mChat("§cTerminating launch sequence due to missing firework rockets")
+                isFlying = false
+                return
             }
         }
-        return -1
     }
 
     /**
-     * Find a chestplate in the hotbar
+     * Legacy version of findMaceSlot that only checks the hotbar
      */
-    private fun findChestplateSlot(): Int {
-        val player = mc.player ?: return -1
-
-        for (i in 0..8) {
-            val stack = player.inventory.getStack(i)
-            val item = stack.item
-            if (item == Items.NETHERITE_CHESTPLATE ||
-                item == Items.DIAMOND_CHESTPLATE ||
-                item == Items.IRON_CHESTPLATE ||
-                item == Items.GOLDEN_CHESTPLATE ||
-                item == Items.CHAINMAIL_CHESTPLATE ||
-                item == Items.LEATHER_CHESTPLATE) {
-                return i
-            }
-        }
-        return -1
-    }
-
-    /**
-     * Find a mace or other weapon in the hotbar
-     */
-    private fun findMaceSlot(): Int {
+    private fun findMaceSlotLegacy(): Int {
         val player = mc.player ?: return -1
 
         // First priority: Find actual mace item
@@ -712,14 +895,50 @@ class MaceDive {
             }
         }
 
-        // Second priority: Find any sword or axe
+        // Second priority: Find any sword
         for (i in 0..8) {
             val stack = player.inventory.getStack(i)
-            if (stack.item is SwordItem || stack.item is AxeItem) {
+            if (stack.item is SwordItem) {
+                return i
+            }
+        }
+
+        // Third priority: Find any axe
+        for (i in 0..8) {
+            val stack = player.inventory.getStack(i)
+            if (stack.item is AxeItem) {
                 return i
             }
         }
 
         return -1
+    }
+
+    /**
+     * Enhanced version of findMaceSlot that uses packet swapping
+     */
+    private fun findMaceSlotEnhanced(): Int {
+        // This method only uses inventory-wide search with packet swapping
+
+        // First priority: Find actual mace item
+        var slot = findAndEquipItem { stack ->
+            stack.item.translationKey.contains("mace")
+        }
+
+        if (slot != -1) return slot
+
+        // Second priority: Find any sword
+        slot = findAndEquipItem { stack ->
+            stack.item is SwordItem
+        }
+
+        if (slot != -1) return slot
+
+        // Third priority: Find any axe
+        slot = findAndEquipItem { stack ->
+            stack.item is AxeItem
+        }
+
+        return slot
     }
 }

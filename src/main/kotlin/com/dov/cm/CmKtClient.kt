@@ -11,6 +11,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.util.InputUtil
 import com.dov.cm.modules.render.StorageESP
 
+
+
 object CmKtClient : ClientModInitializer {
     override fun onInitializeClient() {
         val maceDive = MaceDive()
@@ -23,7 +25,6 @@ object CmKtClient : ClientModInitializer {
         WeaponSwapper.init()
         StorageESP.init()
         RenderHandler.init()
-
 
         // Register a tick event to check key presses
         ClientTickEvents.END_CLIENT_TICK.register { client ->
