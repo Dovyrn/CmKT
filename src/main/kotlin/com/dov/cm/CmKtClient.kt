@@ -5,12 +5,14 @@ import com.dov.cm.commands.CommandHandler
 import com.dov.cm.config.Config
 import com.dov.cm.modules.combat.*
 import com.dov.cm.modules.render.*
-import com.dov.cm.modules.combat.Hitbox
+import com.dov.cm.modules.combat.EnhancedHitbox
 import com.dov.cm.modules.render.Chams
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.util.InputUtil
 import com.dov.cm.modules.render.StorageESP
-
+import com.dov.cm.modules.utilities.FullBright
+import com.dov.cm.modules.utilities.NoJumpDelay
+import com.dov.cm.modules.utilities.ToggleSprint
 
 
 object CmKtClient : ClientModInitializer {
@@ -20,11 +22,15 @@ object CmKtClient : ClientModInitializer {
         CommandHandler.onInitializeClient() // Ensure CommandHandler is loaded
         TargetHUD().onInitializeClient() // Register TargetHUD
         maceDive.init()
-        Hitbox.init()
+        EnhancedHitbox.init()
         Chams.init()
         WeaponSwapper.init()
         StorageESP.init()
         RenderHandler.init()
+        NoJumpDelay.init()
+        FullBright.init()
+        ToggleSprint.init()
+        AimAssist.init()
 
         // Register a tick event to check key presses
         ClientTickEvents.END_CLIENT_TICK.register { client ->

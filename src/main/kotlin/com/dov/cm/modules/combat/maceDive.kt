@@ -86,7 +86,7 @@ class MaceDive {
         // If swapPacket is false, check if we have required items in hotbar before proceeding
         if (!swapPacket) {
             val hasElytra = findItemInHotbar(Items.ELYTRA) != -1 || isWearingElytra()
-            val hasChestplate = findChestplateSlot() != -1
+            val hasChestplate = findChestplateSlot() != -1 || isWearingChestplate()
             val hasWeapon = findMaceSlotLegacy() != -1
 
             // Need an elytra (or wearing one), a chestplate AND a weapon

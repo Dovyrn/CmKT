@@ -235,22 +235,16 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var hitboxExpand: Float = 0.1F
     @Property(
-        type = PropertyType.SWITCH,
-        name = "Players",
-        description = "Include players",
+        type = PropertyType.SELECTOR,
+        name = "Targets",
+        description = "Players/All entites",
         category = "Combat",
-        subcategory = "Hitbox"
+        subcategory = "Hitbox",
+        options = ["Players", "All Entites"]
     )
-    var hitboxPlayers: Boolean = true
+    var hitboxTargets: Int = 1
 
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Mobs",
-        description = "Include Mobs",
-        category = "Combat",
-        subcategory = "Hitbox"
-    )
-    var hitboxMobs: Boolean = true
+
 
     @Property(
         type = PropertyType.SWITCH,
@@ -486,8 +480,179 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var shulkerEspColor: Color = Color(245, 13, 222, 153) // Pink
 
+    // UTILS AAAAAAAAAAAAAAA
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Sprint",
+        description = "Toggles sprint",
+        category = "Utilities"
+    )
+    var sprint : Boolean = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "No jump delay",
+        description = "Removes the delay when holding space",
+        category = "Utilities"
+    )
+    var noJumpDelay = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Full Bright",
+        description = "Just like how Sylphie brightens up my day.",
+        category = "Utilities"
+    )
+    var fullBright : Boolean = true
+
+    // AIM ASSIST
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Aim Assist",
+        description = "Helps aim at targets automatically",
+        category = "Combat",
+        subcategory = "Aim Assist"
+    )
+    var aimAssistEnabled: Boolean = false
+
+    @Property(
+        type = PropertyType.SELECTOR,
+        name = "Mode",
+        description = "Which axis to assist aiming on",
+        category = "Combat",
+        subcategory = "Aim Assist",
+        options = ["Both", "Horizontal", "Vertical"]
+    )
+    var aimAssistMode: Int = 0
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Stop on Edge",
+        description = "Stops rotating as soon as it reaches the hitbox",
+        category = "Combat",
+        subcategory = "Aim Assist"
+    )
+    var stopOnEdge: Boolean = false
+
+    @Property(
+        type = PropertyType.SLIDER,
+        name = "Visible Time",
+        description = "How long a target must be visible before aim assist activates (ms)",
+        category = "Combat",
+        subcategory = "Aim Assist",
+        min = 0,
+        max = 500
+    )
+    var aimAssistVisibleTime: Int = 100
+
+    @Property(
+        type = PropertyType.DECIMAL_SLIDER,
+        name = "Smoothing",
+        description = "How smoothly to adjust aim (lower = faster)",
+        category = "Combat",
+        subcategory = "Aim Assist",
+        minF = 0.1F,
+        maxF = 1.0F,
+        decimalPlaces = 2
+    )
+    var aimAssistSmoothing: Float = 0.5F
+
+    @Property(
+        type = PropertyType.SLIDER,
+        name = "FOV",
+        description = "Field of view in which aim assist activates (degrees)",
+        category = "Combat",
+        subcategory = "Aim Assist",
+        min = 5,
+        max = 180
+    )
+    var aimAssistFOV: Int = 60
+
+    @Property(
+        type = PropertyType.DECIMAL_SLIDER,
+        name = "Range",
+        description = "Maximum distance to targets",
+        category = "Combat",
+        subcategory = "Aim Assist",
+        minF = 1.0F,
+        maxF = 10.0F,
+        decimalPlaces = 1
+    )
+    var aimAssistRange: Float = 5.0F
+
+    @Property(
+        type = PropertyType.DECIMAL_SLIDER,
+        name = "Random",
+        description = "Randomness of aim movements",
+        category = "Combat",
+        subcategory = "Aim Assist",
+        minF = 0.0F,
+        maxF = 5.0F,
+        decimalPlaces = 1
+    )
+    var aimAssistRandom: Float = 0.5F
+
+    @Property(
+        type = PropertyType.SELECTOR,
+        name = "Hitbox",
+        description = "Which part of the target to aim at",
+        category = "Combat",
+        subcategory = "Aim Assist",
+        options = ["Eye", "Center", "Bottom"]
+    )
+    var aimAssistHitbox: Int = 0
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Weapon Only",
+        description = "Only activate when holding a weapon",
+        category = "Combat",
+        subcategory = "Aim Assist"
+    )
+    var aimAssistWeaponOnly: Boolean = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Sticky Target",
+        description = "Stick to one target until it's invalid",
+        category = "Combat",
+        subcategory = "Aim Assist"
+    )
+    var aimAssistStickyTarget: Boolean = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Target Players",
+        description = "Target player entities",
+        category = "Combat",
+        subcategory = "Aim Assist Targets"
+    )
+    var aimAssistTargetPlayers: Boolean = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Target Crystals",
+        description = "Target end crystal entities",
+        category = "Combat",
+        subcategory = "Aim Assist Targets"
+    )
+    var aimAssistTargetCrystals: Boolean = false
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Target Entities",
+        description = "Target all living entities",
+        category = "Combat",
+        subcategory = "Aim Assist Targets"
+    )
+    var aimAssistTargetEntities: Boolean = false
+
+
     init {
         initialize()
+
         // Storage ESP dependencies
         addDependency("storageEspTracers", "storageEspEnabled")
 
@@ -507,12 +672,46 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("furnaceEspColor", "furnaceEspEnabled")
         addDependency("shulkerEspColor", "shulkerEspEnabled")
 
+
+        addDependency("aimAssistMode", "aimAssistEnabled")
+        addDependency("aimAssistVisibleTime", "aimAssistEnabled")
+        addDependency("aimAssistSmoothing", "aimAssistEnabled")
+        addDependency("aimAssistFOV", "aimAssistEnabled")
+        addDependency("aimAssistRange", "aimAssistEnabled")
+        addDependency("aimAssistRandom", "aimAssistEnabled")
+        addDependency("aimAssistHitbox", "aimAssistEnabled")
+        addDependency("aimAssistWeaponOnly", "aimAssistEnabled")
+        addDependency("aimAssistStickyTarget", "aimAssistEnabled")
+        addDependency("aimAssistTargetPlayers", "aimAssistEnabled")
+        addDependency("aimAssistTargetCrystals", "aimAssistEnabled")
+        addDependency("aimAssistTargetEntities", "aimAssistEnabled")
+        addDependency("stopOnEdge","aimAssistEnabled")
+
+
+        setSubcategoryDescription(
+            "Combat",
+            "Aim Assist",
+            "Settings for automatic aiming assistance"
+        )
+
+        setSubcategoryDescription(
+            "Combat",
+            "Aim Assist Targets",
+            "Configure which types of entities to target"
+        )
+
         // Set subcategory descriptions
         setSubcategoryDescription(
             "Render",
             "Storage ESP",
             "Highlight storage blocks like chests and containers"
         )
+
+        setCategoryDescription(
+            "Utilities",
+            "Helpful small things"
+        )
+
 
         setSubcategoryDescription(
             "Render",
@@ -538,8 +737,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
 
         // Hitbox dependencies
         addDependency("hitboxExpand", "HitboxEnabled")
-        addDependency("hitboxPlayers", "HitboxEnabled")
-        addDependency("hitboxMobs", "HitboxEnabled")
+        addDependency("hitboxTargets", "HitboxEnabled")
 
         // ESP Dependencies
         addDependency("espRenderPlayers", "espEnabled")
