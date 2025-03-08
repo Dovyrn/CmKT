@@ -32,6 +32,8 @@ object CommandHandler {
                     MinecraftClient.getInstance().setScreen(Config.gui())
                 }
             }
+        } else if (initCommand == "test"){
+            Config.sprint = false
         }
     }
 }

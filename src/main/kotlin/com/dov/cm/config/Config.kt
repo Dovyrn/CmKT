@@ -649,12 +649,116 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var aimAssistTargetEntities: Boolean = false
 
+    // Backtrack Settings
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Backtrack",
+        description = "Delays player movement packets when they move out of range",
+        category = "Combat",
+        subcategory = "Backtrack"
+    )
+    var backtrackEnabled: Boolean = false
+
+    @Property(
+        type = PropertyType.DECIMAL_SLIDER,
+        name = "Min Distance",
+        description = "Minimum distance to activate backtrack",
+        category = "Combat",
+        subcategory = "Backtrack",
+        minF = 0.0F,
+        maxF = 4.0F,
+        decimalPlaces = 1
+    )
+    var backtrackMinDistance: Float = 1.0F
+
+    @Property(
+        type = PropertyType.DECIMAL_SLIDER,
+        name = "Max Distance",
+        description = "Maximum distance to activate backtrack",
+        category = "Combat",
+        subcategory = "Backtrack",
+        minF = 2.0F,
+        maxF = 6.0F,
+        decimalPlaces = 1
+    )
+    var backtrackMaxDistance: Float = 4.0F
+
+    @Property(
+        type = PropertyType.SLIDER,
+        name = "Maximum Delay",
+        description = "Maximum time to delay packets (milliseconds)",
+        category = "Combat",
+        subcategory = "Backtrack",
+        min = 50,
+        max = 500
+    )
+    var backtrackMaxDelay: Int = 200
+
+    @Property(
+        type = PropertyType.SLIDER,
+        name = "Maximum Hurt Time",
+        description = "Maximum hurt time of target for backtrack to activate",
+        category = "Combat",
+        subcategory = "Backtrack",
+        min = 0,
+        max = 10
+    )
+    var backtrackMaxHurtTime: Int = 5
+
+    @Property(
+        type = PropertyType.DECIMAL_SLIDER,
+        name = "Cooldown",
+        description = "Time between backtrack activations (seconds)",
+        category = "Combat",
+        subcategory = "Backtrack",
+        minF = 0.0F,
+        maxF = 3.0F,
+        decimalPlaces = 1
+    )
+    var backtrackCooldown: Float = 0.5F
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Disable on Hit",
+        description = "Immediately stop backtracking if you take damage",
+        category = "Combat",
+        subcategory = "Backtrack"
+    )
+    var backtrackDisableOnHit: Boolean = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Weapon Only",
+        description = "Only activate when holding a weapon",
+        category = "Combat",
+        subcategory = "Backtrack"
+    )
+    var backtrackWeaponOnly: Boolean = true
+
 
     init {
         initialize()
 
         // Storage ESP dependencies
         addDependency("storageEspTracers", "storageEspEnabled")
+
+        // Add these to the init block in Config.kt to create dependencies for Backtrack settings
+
+        // Backtrack dependencies
+        addDependency("backtrackMinDistance", "backtrackEnabled")
+        addDependency("backtrackMaxDistance", "backtrackEnabled")
+        addDependency("backtrackMaxDelay", "backtrackEnabled")
+        addDependency("backtrackMaxHurtTime", "backtrackEnabled")
+        addDependency("backtrackCooldown", "backtrackEnabled")
+        addDependency("backtrackDisableOnHit", "backtrackEnabled")
+        addDependency("backtrackWeaponOnly", "backtrackEnabled")
+
+        // Add category description
+        setSubcategoryDescription(
+            "Combat",
+            "Backtrack",
+            "Delays player movement to allow hitting them from further away"
+        )
 
         // Storage ESP type dependencies - these should only be active if the master switch is on
         addDependency("chestEspEnabled", "storageEspEnabled")

@@ -343,8 +343,8 @@ object AimAssist {
                 val currentPitch = player.pitch
 
                 // Calculate maximum rotation change per step
-                val maxYawChange = (1.5f * (1f - smoothing / 1.1f)) / 2.5f
-                val maxPitchChange = (0.5f * (1f - smoothing / 1.1f)) / 2.5f
+                val maxYawChange = (1.0f * (1f - smoothing / 1.1f)) / 2.5f
+                val maxPitchChange = (0.3f * (1f - smoothing / 1.1f)) / 2.5f
 
                 // Calculate needed rotation changes
                 val yawDiff = wrap(targetRot.yaw - currentYaw)

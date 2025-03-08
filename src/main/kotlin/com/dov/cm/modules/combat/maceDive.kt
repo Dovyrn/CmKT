@@ -120,7 +120,7 @@ class MaceDive {
             groundLaunchSequence()
             monitorFlight()
         }  else {
-            // Player is in air - mid-air launch sequence
+            // Player is in air - midair launch sequence
             UChat.mChat("Air Launch Sequence")
             airLaunchSequence()
         }
@@ -169,7 +169,7 @@ class MaceDive {
      * @param hotbarSlot The hotbar slot to swap to (0-8)
      * @return True if the item was found and swapped, false otherwise
      */
-    fun findAndSwapToHotbar(itemPredicate: (ItemStack) -> Boolean, hotbarSlot: Int = 0): Boolean {
+    private fun findAndSwapToHotbar(itemPredicate: (ItemStack) -> Boolean, hotbarSlot: Int = 0): Boolean {
         val client = MinecraftClient.getInstance()
         val player = client.player ?: return false
         val inventory = player.inventory
@@ -231,18 +231,11 @@ class MaceDive {
         return -1 // Item not found in accessible inventory slots
     }
 
-    /**
-     * Find an axe in the hotbar
-     */
-    private fun findAxeSlot(): Int {
-        return findAndEquipItem { it.item is AxeItem }
-    }
-
     private fun isActivelyBlocking(entity: Entity): Boolean {
         if (entity !is PlayerEntity) return false
 
         // Check if the player is actively using an item
-        if (entity.isUsingItem()) {
+        if (entity.isUsingItem) {
             // Get the item they're using
             val activeItem = if (entity.activeHand == Hand.MAIN_HAND) {
                 entity.mainHandStack.item
@@ -308,12 +301,12 @@ class MaceDive {
 
             // Handle elytra equipment if needed
             if (!isWearingElytraAlready && Config.autoEquipElytra) {
-                if (swapPacket) {
+                elytraSlot = if (swapPacket) {
                     // Use enhanced method with packet swapping
-                    elytraSlot = findAndEquipItem { it.item == Items.ELYTRA }
+                    findAndEquipItem { it.item == Items.ELYTRA }
                 } else {
                     // Legacy hotbar-only method when packet swapping is disabled
-                    elytraSlot = findItemInHotbar(Items.ELYTRA)
+                    findItemInHotbar(Items.ELYTRA)
                 }
 
                 if (elytraSlot == -1) {
@@ -399,10 +392,10 @@ class MaceDive {
             // Handle elytra equipment if needed
             if (!isWearingElytraAlready && Config.autoEquipElytra) {
                 // Find elytra based on swapPacket setting
-                if (swapPacket) {
-                    elytraSlot = findAndEquipItem { it.item == Items.ELYTRA }
+                elytraSlot = if (swapPacket) {
+                    findAndEquipItem { it.item == Items.ELYTRA }
                 } else {
-                    elytraSlot = findItemInHotbar(Items.ELYTRA)
+                    findItemInHotbar(Items.ELYTRA)
                 }
 
                 if (elytraSlot == -1) {
@@ -581,7 +574,7 @@ class MaceDive {
                 }
 
                 // Check if we're close to the ground
-                if (isNearGround(height.toDouble())) {
+                if (isNearGround(height)) {
                     UChat.mChat("§6Ground proximity detected! Preparing for attack...")
                     prepareForAttack()
                     break
@@ -613,8 +606,8 @@ class MaceDive {
             // Swap to chestplate if enabled and we're wearing elytra
             if (Config.autoSwapChestplate && isWearingElytra()) {
                 // Find chestplate based on swapPacket setting
-                if (swapPacket) {
-                    chestplateSlot = findAndEquipItem { stack ->
+                chestplateSlot = if (swapPacket) {
+                    findAndEquipItem { stack ->
                         val item = stack.item
                         item == Items.NETHERITE_CHESTPLATE ||
                                 item == Items.DIAMOND_CHESTPLATE ||
@@ -624,7 +617,7 @@ class MaceDive {
                                 item == Items.LEATHER_CHESTPLATE
                     }
                 } else {
-                    chestplateSlot = findChestplateSlot() // Legacy hotbar-only method
+                    findChestplateSlot() // Legacy hotbar-only method
                 }
 
                 if (chestplateSlot != -1) {
@@ -650,11 +643,11 @@ class MaceDive {
             }
 
             // Find and swap to mace using the appropriate method
-            if (swapPacket) {
-                maceSlot = findMaceSlotEnhanced()
+            maceSlot = if (swapPacket) {
+                findMaceSlotEnhanced()
             } else {
                 // Legacy method for finding mace in hotbar only
-                maceSlot = findMaceSlotLegacy()
+                findMaceSlotLegacy()
             }
 
             if (maceSlot != -1) {
@@ -839,7 +832,6 @@ class MaceDive {
     /**
      * Use firework for boost - respects swapPacket setting
      */
-    @OptIn(DelicateCoroutinesApi::class)
     private suspend fun useFirework() {
         val player = mc.player ?: return
         val interactionManager = mc.interactionManager ?: return

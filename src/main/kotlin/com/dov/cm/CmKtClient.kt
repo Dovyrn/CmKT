@@ -13,7 +13,7 @@ import com.dov.cm.modules.render.StorageESP
 import com.dov.cm.modules.utilities.FullBright
 import com.dov.cm.modules.utilities.NoJumpDelay
 import com.dov.cm.modules.utilities.ToggleSprint
-
+import com.dov.cm.web.WebServerManager
 
 object CmKtClient : ClientModInitializer {
     override fun onInitializeClient() {
@@ -31,6 +31,8 @@ object CmKtClient : ClientModInitializer {
         FullBright.init()
         ToggleSprint.init()
         AimAssist.init()
+        Backtrack.init()
+        WebServerManager.init()
 
         // Register a tick event to check key presses
         ClientTickEvents.END_CLIENT_TICK.register { client ->
