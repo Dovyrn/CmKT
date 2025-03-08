@@ -426,8 +426,12 @@
         const container = document.getElementById('modules-container');
         container.innerHTML = '';
 
+        console.log('Modules data:', modulesData);
+        console.log('Metadata:', metadataData);
+
         // Organize metadata by subcategory for easier access
         const metadataBySubcategory = organizeMetadataBySubcategory();
+        console.log('Organized Metadata:', metadataBySubcategory);
 
         // Create sections for each category in modulesData
         for (const category in modulesData) {
@@ -446,51 +450,35 @@
                 const enabled = modulesData[category][moduleName];
                 const configKey = findConfigKeyForModule(moduleName);
 
+                console.log(`Module: ${moduleName}, Enabled: ${enabled}, ConfigKey: ${configKey}`);
+
                 // Identify subcategories related to this module
                 let relatedSubcategories = [];
                 if (configKey && metadataBySubcategory[category]) {
-                    // Find subcategories that might be related to this module
+                    console.log('Searching for related subcategories');
                     const moduleBaseName = moduleName.replace(/\s+/g, '').toLowerCase();
 
                     for (const subcategory in metadataBySubcategory[category]) {
-                        // Check if this subcategory seems to be related to the module
-                        if (subcategory.toLowerCase().includes(moduleBaseName) ||
-                            moduleBaseName.includes(subcategory.toLowerCase())) {
-                            relatedSubcategories.push(subcategory);
-                        }
-                    }
-
-                    // If no match by name, check if there's a direct module property
-                    if (relatedSubcategories.length === 0) {
-                        for (const subcategory in metadataBySubcategory[category]) {
-                            for (const key in metadataBySubcategory[category][subcategory]) {
-                                if (key === configKey) {
-                                    relatedSubcategories.push(subcategory);
-                                    break;
-                                }
+                        console.log(`Checking subcategory: ${subcategory}`);
+                        for (const key in metadataBySubcategory[category][subcategory]) {
+                            if (key === configKey) {
+                                console.log(`Found related subcategory: ${subcategory}`);
+                                relatedSubcategories.push(subcategory);
+                                break;
                             }
                         }
                     }
 
-                    // Handle special cases where we know the mappings
-                    if (relatedSubcategories.length === 0) {
-                        const specialMappings = {
-                            'Target HUD': ['TargetHUD'],
-                            'Storage ESP': ['Storage ESP', 'Storage ESP Types'],
-                            'Hitbox': ['Hitbox'],
-                            'Mace Dive': ['Mace Dive'],
-                            'Mace D-Tap': ['Mace D-Tap'],
-                            'Aim Assist': ['Aim Assist', 'Aim Assist Targets'],
-                            'Weapon Swapper': ['Weapon Swapper']
-                        };
-
-                        if (specialMappings[moduleName]) {
-                            relatedSubcategories = specialMappings[moduleName];
-                        }
-                    }
+                    console.log('Related subcategories:', relatedSubcategories);
                 }
 
-                const moduleCard = createModuleCard(moduleName, enabled, configKey, category, relatedSubcategories);
+                const moduleCard = createModuleCard(
+                    moduleName,
+                    enabled,
+                    configKey,
+                    category,
+                    relatedSubcategories
+                );
                 moduleGrid.appendChild(moduleCard);
             }
 
@@ -531,6 +519,10 @@
 
     // Create a module card
     function createModuleCard(name, enabled, configKey, category, relatedSubcategories) {
+        console.log(`Creating module card: ${name}`);
+        console.log('Config Key:', configKey);
+        console.log('Related Subcategories:', relatedSubcategories);
+
         const card = document.createElement('div');
         card.className = 'module-card';
 
@@ -545,12 +537,19 @@
         const controls = document.createElement('div');
         controls.className = 'module-controls';
 
-        // Add settings button if we have related settings
-        if (relatedSubcategories && relatedSubcategories.length > 0) {
-            const settingsButton = document.createElement('button');
-            settingsButton.className = 'settings-toggle';
-            settingsButton.innerHTML = '<i class="fas fa-cog"></i>';
-            settingsButton.title = 'Module Settings';
+        // Add settings button if we have settings
+        const settingsButton = document.createElement('button');
+        settingsButton.className = 'settings-toggle';
+        settingsButton.innerHTML = '<i class="fas fa-cog"></i>';
+        settingsButton.title = 'Module Settings';
+
+        // Determine if we should show the settings button
+        const hasSettings = configKey &&
+            (relatedSubcategories && relatedSubcategories.length > 0);
+
+        console.log('Has Settings:', hasSettings);
+
+        if (hasSettings) {
             settingsButton.addEventListener('click', () => toggleSettings(card));
             controls.appendChild(settingsButton);
         }
@@ -584,32 +583,14 @@
         header.appendChild(controls);
         card.appendChild(header);
 
-        // Create settings panel (initially hidden)
-        if (relatedSubcategories && relatedSubcategories.length > 0) {
+        // Logging for settings panel creation
+        if (hasSettings) {
+            console.log('Creating settings panel for:', name);
             const settingsPanel = document.createElement('div');
             settingsPanel.className = 'module-settings';
 
-            const organizedMetadata = organizeMetadataBySubcategory();
-
-            // Add settings from all related subcategories
-            relatedSubcategories.forEach(subcategory => {
-                if (organizedMetadata[category] && organizedMetadata[category][subcategory]) {
-                    // Skip the main toggle which is already in the header
-                    const skipKeys = [configKey];
-
-                    // Process each setting in this subcategory
-                    for (const key in organizedMetadata[category][subcategory]) {
-                        if (skipKeys.includes(key)) continue;
-
-                        const settingData = organizedMetadata[category][subcategory][key];
-                        const settingElement = createSettingElement(key, settingData);
-
-                        if (settingElement) {
-                            settingsPanel.appendChild(settingElement);
-                        }
-                    }
-                }
-            });
+            // Add placeholder to verify settings creation
+            settingsPanel.innerHTML = `<div class="setting-item">Settings for ${name}</div>`;
 
             card.appendChild(settingsPanel);
         }
@@ -834,6 +815,8 @@
 
     // Find config key for a module name
     function findConfigKeyForModule(moduleName) {
+        console.log('Finding config key for:', moduleName);
+
         // Common patterns
         const patterns = [
             moduleName.toLowerCase() + 'Enabled',
@@ -846,6 +829,7 @@
         // Check each pattern
         for (const pattern of patterns) {
             if (pattern in configData) {
+                console.log('Found pattern:', pattern);
                 return pattern;
             }
         }
@@ -866,7 +850,9 @@
             'Chams': 'chamsEnabled'
         };
 
-        return specialCases[moduleName] || null;
+        const foundKey = specialCases[moduleName];
+        console.log('Special case result:', foundKey);
+        return foundKey || null;
     }
 
     // Set up event listeners

@@ -294,6 +294,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         combatModules.addProperty("Hitbox", Config.HitboxEnabled)
         combatModules.addProperty("Weapon Swapper", Config.weaponSwapper)
         combatModules.addProperty("Aim Assist", Config.aimAssistEnabled)
+        combatModules.addProperty("Backtrack", Config.backtrackEnabled)
 
         // Render modules
         val renderModules = JsonObject()
@@ -313,6 +314,74 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         rootJson.add("Utility", utilityModules)
 
         return gson.toJson(rootJson)
+    }
+
+    /**
+     * Get dependency map for settings
+     */
+    private fun getDependenciesJson(): String {
+        // This method will return a JSON object mapping dependent settings to their primary toggle
+        val dependencyMap = JsonObject()
+
+        // Mace Dive dependencies
+        arrayOf(
+            "groundDetectionHeight", "attackMode", "autoEquipElytra",
+            "autoSwapChestplate", "boostStrength", "maxHeight"
+        ).forEach { key -> dependencyMap.addProperty(key, "maceDiveEnabled") }
+
+        // Aim Assist dependencies
+        arrayOf(
+            "aimAssistMode", "aimAssistVisibleTime", "aimAssistSmoothing",
+            "aimAssistFOV", "aimAssistRange", "aimAssistRandom",
+            "aimAssistHitbox", "aimAssistWeaponOnly", "aimAssistStickyTarget",
+            "aimAssistTargetPlayers", "aimAssistTargetCrystals",
+            "aimAssistTargetEntities", "stopOnEdge"
+        ).forEach { key -> dependencyMap.addProperty(key, "aimAssistEnabled") }
+
+        // Backtrack dependencies
+        arrayOf(
+            "backtrackMinDistance", "backtrackMaxDistance", "backtrackMaxDelay",
+            "backtrackMaxHurtTime", "backtrackCooldown", "backtrackDisableOnHit",
+            "backtrackWeaponOnly"
+        ).forEach { key -> dependencyMap.addProperty(key, "backtrackEnabled") }
+
+        // Hitbox dependencies
+        arrayOf(
+            "hitboxExpand", "hitboxTargets"
+        ).forEach { key -> dependencyMap.addProperty(key, "HitboxEnabled") }
+
+        // Mace D-Tap dependencies
+        arrayOf(
+            "axePriority", "maceFirstWeapon", "maceSecondWeapon", "switchOnly"
+        ).forEach { key -> dependencyMap.addProperty(key, "maceDTap") }
+
+        // Weapon Swapper dependencies
+        arrayOf(
+            "firstWeapon", "secondWeapon", "weaponSwapBack"
+        ).forEach { key -> dependencyMap.addProperty(key, "weaponSwapper") }
+
+        // Target HUD dependencies
+        arrayOf(
+            "animations", "offsetX", "offsetY", "showHead", "background"
+        ).forEach { key -> dependencyMap.addProperty(key, "targetHudToggled") }
+
+        // Storage ESP dependencies
+        arrayOf(
+            "storageEspTracers",
+            "chestEspEnabled", "chestEspColor",
+            "enderChestEspEnabled", "enderChestEspColor",
+            "trappedChestEspEnabled", "trappedChestEspColor",
+            "hopperEspEnabled", "hopperEspColor",
+            "furnaceEspEnabled", "furnaceEspColor",
+            "shulkerEspEnabled", "shulkerEspColor"
+        ).forEach { key -> dependencyMap.addProperty(key, "storageEspEnabled") }
+
+        // Developer mode dependencies
+        arrayOf(
+            "debugMessages"
+        ).forEach { key -> dependencyMap.addProperty(key, "developerMode") }
+
+        return gson.toJson(dependencyMap)
     }
 
     /**

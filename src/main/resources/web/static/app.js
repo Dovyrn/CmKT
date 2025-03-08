@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const state = {
     config: null,
     metadata: null,
+    dependencies: {},
     currentCategory: 'Overview',
     modules: null,
     loading: true
@@ -28,6 +29,9 @@ async function initApp() {
         state.metadata = configData.metadata;
         state.modules = modulesData;
         state.loading = false;
+
+        // Determine dependencies
+        determineDependencies();
 
         // Build the navigation
         buildNavigation();
@@ -62,6 +66,62 @@ async function fetchModules() {
         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
     }
     return await response.json();
+}
+
+// Determine module dependencies
+function determineDependencies() {
+    state.dependencies = {};
+
+    // Look through all metadata to find dependencies
+    for (const key in state.metadata) {
+        const meta = state.metadata[key];
+        if (meta && meta.category) {
+            // Find the main module for this setting
+            const mainModules = findMainModulesForSetting(key);
+
+            // Associate this setting with its main modules
+            mainModules.forEach(mainModule => {
+                if (!state.dependencies[mainModule]) {
+                    state.dependencies[mainModule] = [];
+                }
+                state.dependencies[mainModule].push(key);
+            });
+        }
+    }
+}
+
+// Find main modules for a given setting
+function findMainModulesForSetting(settingKey) {
+    const mainModules = [];
+    const specialMappings = {
+        'targetHudToggled': ['Target HUD'],
+        'maceDiveEnabled': ['Mace Dive'],
+        'backtrackEnabled': ['Backtrack'],
+        'aimAssistEnabled': ['Aim Assist'],
+        'HitboxEnabled': ['Hitbox'],
+        'chamsEnabled': ['Chams'],
+        'storageEspEnabled': ['Storage ESP'],
+        'espEnabled': ['ESP'],
+        'sprint': ['Sprint'],
+        'noJumpDelay': ['No Jump Delay'],
+        'fullBright': ['Full Bright'],
+        'weaponSwapper': ['Weapon Swapper'],
+        'maceDTap': ['Mace D-Tap']
+    };
+
+    // Check special mappings first
+    if (specialMappings[settingKey]) {
+        return specialMappings[settingKey];
+    }
+
+    // If no direct mapping, try finding by substring
+    for (const [moduleName, moduleKey] of Object.entries(specialMappings)) {
+        if (settingKey.includes(moduleKey[0].replace(/\s+/g, '').toLowerCase())) {
+            return moduleKey;
+        }
+    }
+
+    return [];
 }
 
 // Build the navigation sidebar
@@ -130,13 +190,9 @@ function showCategory(category) {
 
     if (category === 'Overview') {
         // Show modules overview
-        modulesContainer.classList.remove('hidden');
-        settingsContainer.classList.add('hidden');
         renderModulesOverview(modulesContainer);
     } else {
         // Show category settings
-        modulesContainer.classList.add('hidden');
-        settingsContainer.classList.remove('hidden');
         renderCategorySettings(settingsContainer, category);
     }
 
@@ -146,7 +202,6 @@ function showCategory(category) {
 
 // Render modules overview
 function renderModulesOverview(container) {
-    // Loop through each module category
     for (const category in state.modules) {
         // Create category heading
         const heading = document.createElement('h3');
@@ -161,6 +216,7 @@ function renderModulesOverview(container) {
         // Add module cards
         for (const moduleName in state.modules[category]) {
             const enabled = state.modules[category][moduleName];
+            const configKey = findConfigKeyForModule(moduleName);
 
             // Create module card
             const card = document.createElement('div');
@@ -179,6 +235,10 @@ function renderModulesOverview(container) {
             info.appendChild(name);
             info.appendChild(status);
 
+            // Controls container
+            const controls = document.createElement('div');
+            controls.className = 'module-controls';
+
             // Toggle switch
             const toggle = document.createElement('label');
             toggle.className = 'switch';
@@ -187,15 +247,55 @@ function renderModulesOverview(container) {
             checkbox.type = 'checkbox';
             checkbox.checked = enabled;
 
+            if (configKey) {
+                checkbox.dataset.configKey = configKey;
+                checkbox.addEventListener('change', function() {
+                    pendingChanges[configKey] = this.checked;
+                    updateChangesCount();
+                });
+            }
+
             const slider = document.createElement('span');
             slider.className = 'slider round';
 
             toggle.appendChild(checkbox);
             toggle.appendChild(slider);
 
+            // Settings icon (if module has settings)
+            const hasSettings = configKey && state.dependencies[moduleName];
+            if (hasSettings) {
+                const settingsIcon = document.createElement('button');
+                settingsIcon.className = 'settings-toggle';
+                settingsIcon.innerHTML = '<i class="fas fa-cog"></i>';
+                settingsIcon.title = 'Module Settings';
+                settingsIcon.addEventListener('click', () => toggleModuleSettings(card, moduleName));
+                controls.appendChild(settingsIcon);
+            }
+
+            controls.appendChild(toggle);
+
+            // Module settings panel
+            if (hasSettings) {
+                const settingsPanel = document.createElement('div');
+                settingsPanel.className = 'module-settings';
+
+                // Add settings for this module
+                state.dependencies[moduleName].forEach(settingKey => {
+                    const settingMeta = state.metadata[settingKey];
+                    if (settingMeta) {
+                        const settingElement = createSettingElement(settingKey, settingMeta, state.config[settingKey]);
+                        if (settingElement) {
+                            settingsPanel.appendChild(settingElement);
+                        }
+                    }
+                });
+
+                card.appendChild(settingsPanel);
+            }
+
             // Add components to card
             card.appendChild(info);
-            card.appendChild(toggle);
+            card.appendChild(controls);
 
             // Add card to grid
             grid.appendChild(card);
@@ -204,6 +304,9 @@ function renderModulesOverview(container) {
         // Add grid to container
         container.appendChild(grid);
     }
+
+    // Set up settings toggle functionality
+    setupSettingsToggles();
 }
 
 // Render settings for a category
@@ -325,6 +428,32 @@ function createSettingElement(key, meta, value) {
     return setting;
 }
 
+// Toggle module settings panel
+function toggleModuleSettings(card, moduleName) {
+    const settingsPanel = card.querySelector('.module-settings');
+    const settingsIcon = card.querySelector('.settings-toggle');
+
+    if (settingsPanel) {
+        settingsPanel.classList.toggle('expanded');
+        settingsIcon.classList.toggle('active');
+    }
+}
+
+// Setup settings toggles
+function setupSettingsToggles() {
+    // Add click event listener to any existing settings icons
+    const settingsToggles = document.querySelectorAll('.settings-toggle');
+    settingsToggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const card = this.closest('.module-card');
+            const moduleName = card.querySelector('.module-info h4').textContent;
+            toggleModuleSettings(
+         card, moduleName);
+                             });
+                         });
+                     }
+
+
 // Add switch control
 function addSwitchControl(container, value) {
     const label = document.createElement('label');
@@ -359,6 +488,14 @@ function addSliderControl(container, value, meta) {
     display.className = 'value-display';
     display.textContent = meta.format === 'percent' ? `${Math.round(value * 100)}%` : value;
 
+    // Add input event for live updates
+    input.addEventListener('input', function() {
+        const numValue = parseFloat(this.value);
+        display.textContent = meta.format === 'percent' ? `${Math.round(numValue * 100)}%` : numValue;
+        pendingChanges[container.dataset.key] = numValue;
+        updateChangesCount();
+    });
+
     sliderContainer.appendChild(input);
     sliderContainer.appendChild(display);
     container.appendChild(sliderContainer);
@@ -371,6 +508,12 @@ function addTextControl(container, value, meta) {
     input.className = 'text-input';
     input.value = value || '';
     input.placeholder = meta.placeholder || '';
+
+    // Add change listener
+    input.addEventListener('change', function() {
+        pendingChanges[container.dataset.key] = this.value;
+        updateChangesCount();
+    });
 
     container.appendChild(input);
 }
@@ -403,6 +546,27 @@ function addColorControl(container, value) {
     preview.className = 'color-preview';
     preview.style.backgroundColor = `rgba(${value.r}, ${value.g}, ${value.b}, ${value.a / 255})`;
 
+    // Update handler
+    function updateColor() {
+        const rgb = hexToRgb(picker.value);
+        const alpha = parseInt(alpha.value);
+
+        preview.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha / 255})`;
+
+        pendingChanges[container.dataset.key] = {
+            r: rgb.r,
+            g: rgb.g,
+            b: rgb.b,
+            a: alpha
+        };
+
+        updateChangesCount();
+    }
+
+    // Add event listeners
+    picker.addEventListener('input', updateColor);
+    alpha.addEventListener('input', updateColor);
+
     colorContainer.appendChild(picker);
     colorContainer.appendChild(alpha);
     colorContainer.appendChild(preview);
@@ -424,22 +588,74 @@ function addSelectorControl(container, value, meta) {
         select.appendChild(opt);
     });
 
+    // Add change listener
+    select.addEventListener('change', function() {
+        pendingChanges[container.dataset.key] = parseInt(this.value);
+        updateChangesCount();
+    });
+
     container.appendChild(select);
+}
+
+// Find config key for a module name
+function findConfigKeyForModule(moduleName) {
+    // Common patterns
+    const patterns = [
+        moduleName.toLowerCase() + 'Enabled',
+        moduleName.replace(/\s+/g, '') + 'Enabled',
+        moduleName.replace(/\s+/g, '').toLowerCase() + 'Enabled',
+        moduleName.replace(/\s+/g, '') + 'Toggled',
+        moduleName.toLowerCase().replace(/\s+/g, ''),
+    ];
+
+    // Check each pattern
+    for (const pattern of patterns) {
+        if (pattern in state.config) {
+            return pattern;
+        }
+    }
+
+    // Special cases
+    const specialCases = {
+        'Target HUD': 'targetHudToggled',
+        'ESP': 'espEnabled',
+        'Storage ESP': 'storageEspEnabled',
+        'Sprint': 'sprint',
+        'No Jump Delay': 'noJumpDelay',
+        'Full Bright': 'fullBright',
+        'Mace Dive': 'maceDiveEnabled',
+        'Mace D-Tap': 'maceDTap',
+        'Hitbox': 'HitboxEnabled',
+        'Weapon Swapper': 'weaponSwapper',
+        'Aim Assist': 'aimAssistEnabled',
+        'Chams': 'chamsEnabled'
+    };
+
+    return specialCases[moduleName] || null;
 }
 
 // Set up event listeners
 function setupEventListeners() {
-    // Save button
-    document.getElementById('save-config').addEventListener('click', saveConfig);
+    // Save changes buttons (top)
+    document.getElementById('save-changes').addEventListener('click', saveChanges);
 
-    // Reset button
+    // Reset config button
     document.getElementById('reset-config').addEventListener('click', resetConfig);
 
-    // Search
+    // Search input
     document.getElementById('search').addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
         filterSettings(searchTerm);
     });
+}
+
+// Update the changes counter
+function updateChangesCount() {
+    const count = Object.keys(pendingChanges).length;
+    const changesElement = document.getElementById('changes-count');
+    if (changesElement) {
+        changesElement.textContent = count === 1 ? '1 change' : `${count} changes`;
+    }
 }
 
 // Filter settings based on search
@@ -474,91 +690,16 @@ function filterSettings(searchTerm) {
     });
 }
 
-// Save configuration changes
-async function saveConfig() {
-    // Collect changes
-    const changes = {};
-    let hasChanges = false;
+// Save changes
+async function saveChanges() {
+    const count = Object.keys(pendingChanges).length;
 
-    // Switches
-    document.querySelectorAll('.switch-setting').forEach(setting => {
-        const key = setting.dataset.key;
-        const checked = setting.querySelector('input[type="checkbox"]').checked;
-
-        if (state.config[key] !== checked) {
-            changes[key] = checked;
-            hasChanges = true;
-        }
-    });
-
-    // Sliders
-    document.querySelectorAll('.slider-setting').forEach(setting => {
-        const key = setting.dataset.key;
-        const value = parseFloat(setting.querySelector('.range-slider').value);
-
-        if (state.config[key] !== value) {
-            changes[key] = value;
-            hasChanges = true;
-        }
-    });
-
-    // Text inputs
-    document.querySelectorAll('.text-setting').forEach(setting => {
-        const key = setting.dataset.key;
-        const value = setting.querySelector('.text-input').value;
-
-        if (state.config[key] !== value) {
-            changes[key] = value;
-            hasChanges = true;
-        }
-    });
-
-    // Colors
-    document.querySelectorAll('.color-setting').forEach(setting => {
-        const key = setting.dataset.key;
-        const picker = setting.querySelector('.color-picker');
-        const alpha = setting.querySelector('.alpha-slider');
-
-        const rgb = hexToRgb(picker.value);
-        const color = {
-            r: rgb.r,
-            g: rgb.g,
-            b: rgb.b,
-            a: parseInt(alpha.value)
-        };
-
-        // Check if color changed
-        const currentColor = state.config[key];
-        if (!currentColor ||
-            currentColor.r !== color.r ||
-            currentColor.g !== color.g ||
-            currentColor.b !== color.b ||
-            currentColor.a !== color.a) {
-
-            changes[key] = color;
-            hasChanges = true;
-        }
-    });
-
-    // Selectors
-    document.querySelectorAll('.selector-setting').forEach(setting => {
-        const key = setting.dataset.key;
-        const value = parseInt(setting.querySelector('select').value);
-
-        if (state.config[key] !== value) {
-            changes[key] = value;
-            hasChanges = true;
-        }
-    });
-
-    // If no changes, show message and return
-    if (!hasChanges) {
+    if (count === 0) {
         setStatus('No changes to save', 'info');
         return;
     }
 
-    // Save changes
-    setStatus('Saving changes...', 'info');
+    setStatus(`Saving ${count} change${count === 1 ? '' : 's'}...`, 'info');
 
     try {
         const response = await fetch('/api/config', {
@@ -566,43 +707,45 @@ async function saveConfig() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(changes)
+            body: JSON.stringify(pendingChanges)
         });
 
         if (!response.ok) {
-            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            throw new Error(`Server returned ${response.status} ${response.statusText}`);
         }
 
         const result = await response.json();
 
         if (result.status === 'success') {
-            // Update local state
-            for (const key in changes) {
-                state.config[key] = changes[key];
+            // Update local config
+            for (const key in pendingChanges) {
+                state.config[key] = pendingChanges[key];
             }
 
-            setStatus('Changes saved successfully!', 'success');
+            // Clear pending changes
+            pendingChanges = {};
+            updateChangesCount();
 
-            // If we're in the Overview, refresh it to show updated toggles
-            if (state.currentCategory === 'Overview') {
-                showCategory('Overview');
-            }
+            setStatus(`${count} change${count === 1 ? '' : 's'} saved successfully!`, 'success');
+
+            // Reload modules to refresh the UI
+            await fetchModules();
+            showCategory(state.currentCategory);
         } else {
             throw new Error(result.message || 'Unknown error');
         }
     } catch (error) {
-        setStatus('Error saving changes: ' + error.message, 'error');
+        setStatus(`Error saving changes: ${error.message}`, 'error');
     }
 }
 
-// Reset configuration to defaults
+// Reset configuration
 async function resetConfig() {
-    // Confirmation
-    if (!confirm('Are you sure you want to reset all settings to defaults?')) {
+    if (!confirm('Are you sure you want to reset ALL settings to their default values? This cannot be undone.')) {
         return;
     }
 
-    setStatus('Resetting configuration...', 'info');
+    setStatus('Resetting all settings to defaults...', 'info');
 
     try {
         const response = await fetch('/api/config/reset', {
@@ -610,46 +753,45 @@ async function resetConfig() {
         });
 
         if (!response.ok) {
-            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            throw new Error(`Server returned ${response.status} ${response.statusText}`);
         }
 
         const result = await response.json();
 
         if (result.status === 'success') {
-            setStatus('Configuration reset successfully. Reloading...', 'success');
+            setStatus('All settings have been reset to defaults. Reloading...', 'success');
 
-            // Reload the page after a short delay
-            setTimeout(() => {
-                window.location.reload();
+            // Clear pending changes
+            pendingChanges = {};
+            updateChangesCount();
+
+            // Reload everything after a brief delay
+            setTimeout(async () => {
+                await initApp();
             }, 1500);
         } else {
             throw new Error(result.message || 'Unknown error');
         }
     } catch (error) {
-        setStatus('Error resetting configuration: ' + error.message, 'error');
+        setStatus(`Error resetting settings: ${error.message}`, 'error');
     }
 }
 
-// Set status message
-function setStatus(message, type = 'info') {
+// Helper function to set status
+function setStatus(message, type) {
     const statusElement = document.getElementById('status-message');
     statusElement.textContent = message;
-    statusElement.className = 'status-message ' + type;
+    statusElement.className = `status ${type}`;
+    statusElement.style.display = 'block';
 
-    // Auto-clear success messages
+    // Auto-hide success messages
     if (type === 'success') {
         setTimeout(() => {
             if (statusElement.textContent === message) {
-                clearStatus();
+                statusElement.style.display = 'none';
             }
         }, 3000);
     }
-}
-
-// Clear status message
-function clearStatus() {
-    const statusElement = document.getElementById('status-message');
-    statusElement.className = 'status-message';
 }
 
 // Helper: RGB to Hex
@@ -670,3 +812,6 @@ function hexToRgb(hex) {
 
     return { r, g, b };
 }
+
+// Initialize pending changes
+let pendingChanges = {};
