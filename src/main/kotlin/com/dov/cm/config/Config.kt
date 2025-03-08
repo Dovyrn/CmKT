@@ -726,6 +726,8 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var backtrackDisableOnHit: Boolean = true
 
+
+
     @Property(
         type = PropertyType.SWITCH,
         name = "Weapon Only",
@@ -735,9 +737,44 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var backtrackWeaponOnly: Boolean = true
 
+    fun forceInitialize() {
+        try {
+            // Ensure the configuration file exists
+            val configFile = File("./config/CmKt/config.toml")
+            if (!configFile.exists()) {
+                configFile.parentFile?.mkdirs()
+                configFile.createNewFile()
+            }
+
+            // Ensure all properties have their default values set
+            initialize()
+
+            // Force save to create the file with default values
+            writeData()
+        } catch (e: Exception) {
+            println("Error during force initialization: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    // Override initialize to add more logging and error handling
+    fun yala() {
+        try {
+            super.initialize()
+            println("Config initialized successfully")
+        } catch (e: Exception) {
+            println("Error during config initialization: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
 
     init {
         initialize()
+
+        // Add log messages to help diagnose initialization
+        println("Config object initialized")
+        println("Config file path: ${File("./config/CmKt/config.toml").absolutePath}")
 
         // Storage ESP dependencies
         addDependency("storageEspTracers", "storageEspEnabled")

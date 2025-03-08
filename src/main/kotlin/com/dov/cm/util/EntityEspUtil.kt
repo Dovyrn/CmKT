@@ -178,7 +178,7 @@ object EntityEspUtil {
         val matrix = matrixStack.peek().positionMatrix
 
         // Bottom face
-        buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a);
+        buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a)
         buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a);
         buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a);
         buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a);

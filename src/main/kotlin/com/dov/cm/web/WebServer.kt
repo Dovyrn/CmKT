@@ -11,7 +11,6 @@ import java.lang.reflect.Modifier
 import java.awt.Color
 import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.lang.reflect.InvocationTargetException
 import kotlin.text.Charsets
 
 /**
@@ -20,20 +19,20 @@ import kotlin.text.Charsets
  */
 class WebServer(port: Int = 8080) : NanoHTTPD(port) {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
-    
+
     init {
         start(SOCKET_READ_TIMEOUT, false)
         UChat.mChat("§aWeb server started on http://localhost:$port")
     }
-    
+
     override fun serve(session: IHTTPSession): Response {
         try {
             val uri = session.uri
             val method = session.method
-            
-            // Add CORS headers for development 
+
+            // Add CORS headers for development
             var response: Response
-            
+
             // Main page
             if (uri == "/" || uri.isEmpty()) {
                 response = newResponse(Response.Status.OK, "text/html", getResource("index.html"))
@@ -51,7 +50,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 val resourcePath = uri.substring(8)
                 val mimeType = getMimeTypeForResource(resourcePath)
                 val resource = getResource(resourcePath)
-                
+
                 if (resource != null) {
                     response = newResponse(Response.Status.OK, mimeType, resource)
                 } else {
@@ -85,10 +84,10 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                     }
                 } catch (e: Exception) {
                     UChat.mChat("§cAPI error: ${e.message}")
-                    e.printStackTrace(java.lang.System.err)
+                    e.printStackTrace()
                     response = newFixedLengthResponse(
-                        Response.Status.INTERNAL_ERROR, 
-                        "application/json", 
+                        Response.Status.INTERNAL_ERROR,
+                        "application/json",
                         "{\"error\":\"API processing error: ${e.message?.replace("\"", "\\\"") ?: "Unknown error"}\"}"
                     )
                 }
@@ -98,21 +97,21 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 UChat.mChat("§cResource not found: $uri")
                 response = newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not Found: $uri")
             }
-            
+
             // Add CORS headers to every response
             response.addHeader("Access-Control-Allow-Origin", "*")
             response.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
             response.addHeader("Access-Control-Allow-Headers", "Content-Type")
-            
+
             return response
-            
+
         } catch (e: Exception) {
             UChat.mChat("§cWeb server error: ${e.message}")
             e.printStackTrace()
             return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "Server error: ${e.message}")
         }
     }
-    
+
     /**
      * Create a new response with the specified content
      */
@@ -123,7 +122,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Resource not found")
         }
     }
-    
+
     /**
      * Get a resource stream from resources folder
      */
@@ -131,7 +130,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         // Load from web resources directory
         val resourcePath = "web/$path"
         val stream = javaClass.classLoader.getResourceAsStream(resourcePath)
-        
+
         // If resource not found in jar, generate it on the fly
         if (stream == null && path == "index.html") {
             return ByteArrayInputStream(generateIndexHtml().toByteArray(Charsets.UTF_8))
@@ -146,10 +145,10 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         } else if (stream == null && path == "app.js") {
             return ByteArrayInputStream(generateJs().toByteArray(Charsets.UTF_8))
         }
-        
+
         return stream
     }
-    
+
     /**
      * Get mime type based on file extension
      */
@@ -166,7 +165,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             else -> "application/octet-stream"
         }
     }
-    
+
     /**
      * Convert Config object to JSON with metadata
      */
@@ -174,16 +173,16 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         val resultObject = JsonObject()
         val valuesObject = JsonObject()
         val metadataObject = JsonObject()
-        
+
         // Get all fields in the Config object
         val fields = Config::class.java.declaredFields
-        
+
         for (field in fields) {
             // Skip static fields, private fields, or fields with synthetic modifiers
             if (Modifier.isStatic(field.modifiers) || field.name.contains("$")) {
                 continue
             }
-            
+
             field.isAccessible = true
             try {
                 // Add the field value to values object
@@ -207,18 +206,21 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         }
                     }
                 }
-                
+
                 // Extract metadata from annotations
                 val propertyAnnotation = field.getAnnotation(gg.essential.vigilance.data.Property::class.java)
                 if (propertyAnnotation != null) {
                     val fieldMetadata = JsonObject()
-                    
+
                     // Get basic properties from annotation
                     fieldMetadata.addProperty("name", propertyAnnotation.name)
                     fieldMetadata.addProperty("description", propertyAnnotation.description)
                     fieldMetadata.addProperty("category", propertyAnnotation.category)
                     fieldMetadata.addProperty("subcategory", propertyAnnotation.subcategory ?: "General")
-                    
+
+                    // Add the property type information for the UI
+                    fieldMetadata.addProperty("controlType", propertyAnnotation.type.toString())
+
                     // Get type-specific properties
                     when (propertyAnnotation.type) {
                         gg.essential.vigilance.data.PropertyType.SWITCH -> {
@@ -258,7 +260,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                             fieldMetadata.addProperty("type", "unknown")
                         }
                     }
-                    
+
                     metadataObject.add(field.name, fieldMetadata)
                 }
             } catch (e: Exception) {
@@ -266,27 +268,91 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 UChat.mChat("§cError processing field ${field.name}: ${e.message}")
             }
         }
-        
-        // We'll just create empty objects for subcategory and category descriptions
-        // since the methods don't exist in your Config class
+
+        // Create objects for subcategory and category descriptions
         val subcategoryDescriptions = JsonObject()
         val categoryDescriptions = JsonObject()
-        
+
+        // Extract subcategory descriptions from Config object if available
+        try {
+            val getSubcategoryDescriptionMethod = Config::class.java.getDeclaredMethod("getSubcategoryDescription", String::class.java, String::class.java)
+            getSubcategoryDescriptionMethod.isAccessible = true
+
+            // Get unique category and subcategory pairs from metadata
+            val categorySubcategoryPairs = HashSet<Pair<String, String>>()
+
+            for (field in fields) {
+                val propertyAnnotation = field.getAnnotation(gg.essential.vigilance.data.Property::class.java)
+                if (propertyAnnotation != null) {
+                    val category = propertyAnnotation.category
+                    val subcategory = propertyAnnotation.subcategory ?: "General"
+                    categorySubcategoryPairs.add(Pair(category, subcategory))
+                }
+            }
+
+            // Get description for each pair
+            for ((category, subcategory) in categorySubcategoryPairs) {
+                try {
+                    val description = getSubcategoryDescriptionMethod.invoke(Config, category, subcategory) as String?
+                    if (description != null && description.isNotEmpty()) {
+                        if (!subcategoryDescriptions.has(category)) {
+                            subcategoryDescriptions.add(category, JsonObject())
+                        }
+                        subcategoryDescriptions.getAsJsonObject(category).addProperty(subcategory, description)
+                    }
+                } catch (e: Exception) {
+                    // Ignore errors for specific subcategories
+                }
+            }
+        } catch (e: Exception) {
+            // Method not available, ignore
+        }
+
+        // Extract category descriptions if available
+        try {
+            val getCategoryDescriptionMethod = Config::class.java.getDeclaredMethod("getCategoryDescription", String::class.java)
+            getCategoryDescriptionMethod.isAccessible = true
+
+            // Get unique categories from metadata
+            val categories = HashSet<String>()
+
+            for (field in fields) {
+                val propertyAnnotation = field.getAnnotation(gg.essential.vigilance.data.Property::class.java)
+                if (propertyAnnotation != null) {
+                    categories.add(propertyAnnotation.category)
+                }
+            }
+
+            // Get description for each category
+            for (category in categories) {
+                try {
+                    val description = getCategoryDescriptionMethod.invoke(Config, category) as String?
+                    if (description != null && description.isNotEmpty()) {
+                        categoryDescriptions.addProperty(category, description)
+                    }
+                } catch (e: Exception) {
+                    // Ignore errors for specific categories
+                }
+            }
+        } catch (e: Exception) {
+            // Method not available, ignore
+        }
+
         // Build the final result
         resultObject.add("values", valuesObject)
         resultObject.add("metadata", metadataObject)
         resultObject.add("subcategoryDescriptions", subcategoryDescriptions)
         resultObject.add("categoryDescriptions", categoryDescriptions)
-        
+
         return gson.toJson(resultObject)
     }
-    
+
     /**
      * Create a simplified modules list
      */
     private fun getModulesJson(): String {
         val rootJson = JsonObject()
-        
+
         // Combat modules
         val combatModules = JsonObject()
         combatModules.addProperty("Mace Dive", Config.maceDiveEnabled)
@@ -294,44 +360,50 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         combatModules.addProperty("Hitbox", Config.HitboxEnabled)
         combatModules.addProperty("Weapon Swapper", Config.weaponSwapper)
         combatModules.addProperty("Aim Assist", Config.aimAssistEnabled)
-        
+        combatModules.addProperty("Backtrack", Config.backtrackEnabled)
+
         // Render modules
         val renderModules = JsonObject()
         renderModules.addProperty("Target HUD", Config.targetHudToggled)
         renderModules.addProperty("ESP", Config.espEnabled)
         renderModules.addProperty("Chams", Config.chamsEnabled)
         renderModules.addProperty("Storage ESP", Config.storageEspEnabled)
-        
+
         // Utility modules
         val utilityModules = JsonObject()
         utilityModules.addProperty("Sprint", Config.sprint)
         utilityModules.addProperty("No Jump Delay", Config.noJumpDelay)
         utilityModules.addProperty("Full Bright", Config.fullBright)
-        
+
+        // Developer modules
+        val developerModules = JsonObject()
+        developerModules.addProperty("Developer Mode", Config.developerMode)
+
         rootJson.add("Combat", combatModules)
         rootJson.add("Render", renderModules)
         rootJson.add("Utility", utilityModules)
-        
+        rootJson.add("Developer", developerModules)
+
         return gson.toJson(rootJson)
     }
-    
+
     /**
      * Update config settings from JSON
      */
     private fun updateConfig(postData: String): Response {
         try {
             val jsonObject = gson.fromJson(postData, JsonObject::class.java)
-            
+
             // Update each setting
             for (entry in jsonObject.entrySet()) {
                 val propName = entry.key
-                
+
                 try {
                     val field = findField(propName)
-                    
+
                     if (field != null) {
                         field.isAccessible = true
-                        
+
                         when (field.type) {
                             Boolean::class.java -> field.setBoolean(Config, entry.value.asBoolean)
                             Int::class.java -> field.setInt(Config, entry.value.asInt)
@@ -352,11 +424,11 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                     UChat.mChat("§cError updating $propName: ${e.message}")
                 }
             }
-            
+
             // Save config changes
             Config.markDirty()
             Config.writeData()
-            
+
             return newFixedLengthResponse(Response.Status.OK, "application/json", "{\"status\":\"success\"}")
         } catch (e: Exception) {
             UChat.mChat("§cError updating config: ${e.message}")
@@ -367,14 +439,14 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             )
         }
     }
-    
+
     /**
      * Reset config to defaults
      */
     private fun resetConfig(): Response {
         try {
             Config.initialize()
-            
+
             return newFixedLengthResponse(Response.Status.OK, "application/json", "{\"status\":\"success\"}")
         } catch (e: Exception) {
             return newFixedLengthResponse(
@@ -384,7 +456,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             )
         }
     }
-    
+
     /**
      * Find a field by name in the Config class
      */
@@ -397,7 +469,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             null
         }
     }
-    
+
     /**
      * Generate basic HTML content on the fly if resource files aren't available
      */
@@ -410,60 +482,63 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <meta http-equiv="refresh" content="0;url=/modules">
                 <title>Logical Zoom Config</title>
-                <style>
-                    body {
-                        font-family: sans-serif;
-                        background-color: #1f2937;
-                        color: white;
-                        text-align: center;
-                        padding-top: 100px;
-                    }
-                    p {
-                        margin-top: 20px;
-                    }
-                    a {
-                        color: #4f46e5;
-                        text-decoration: none;
-                    }
-                    a:hover {
-                        text-decoration: underline;
-                    }
-                </style>
             </head>
             <body>
-                <h1>Redirecting to Module Settings...</h1>
-                <p>If you are not redirected automatically, <a href="/modules">click here</a>.</p>
+                <p>Redirecting to module settings...</p>
             </body>
             </html>
         """.trimIndent()
     }
-    
+
     /**
-     * Generate module settings HTML content on the fly
+     * Generate module settings HTML on the fly
+     * This is a minimal implementation - you should replace it with the full code
      */
     private fun generateModuleSettingsHtml(): String {
-        // This returns the content of the improved-module-settings.html file
-        // I'm not including it here due to its size, but it's the HTML file I provided
-        // This is just a simplified placeholder
         return """
             <!DOCTYPE html>
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <meta http-equiv="refresh" content="0;url=/diagnostic">
                 <title>Logical Zoom Config</title>
+                <style>
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        background-color: #1f2937;
+                        color: #f3f4f6;
+                        padding: 20px;
+                    }
+                    .container {
+                        max-width: 800px;
+                        margin: 0 auto;
+                    }
+                    h1 {
+                        color: #4f46e5;
+                    }
+                    .card {
+                        background-color: #111827;
+                        border-radius: 8px;
+                        padding: 20px;
+                        margin-bottom: 20px;
+                    }
+                </style>
             </head>
             <body>
-                <p>Please use the static resources for the full module settings UI.</p>
-                <p>Redirecting to diagnostic page...</p>
+                <div class="container">
+                    <h1>Logical Zoom Configuration</h1>
+                    <div class="card">
+                        <p>Please copy the full module-settings.html file to your resources directory for the complete UI.</p>
+                        <p>Basic configuration is available at <a href="/diagnostic" style="color: #4f46e5;">/diagnostic</a></p>
+                    </div>
+                </div>
             </body>
             </html>
         """.trimIndent()
     }
-    
+
     /**
-     * Generate diagnostic HTML content on the fly
+     * Generate diagnostic HTML on the fly
      */
     private fun generateDiagnosticHtml(): String {
         return """
@@ -475,10 +550,10 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 <title>Logical Zoom Config - Diagnostic</title>
                 <style>
                     body {
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                        line-height: 1.6;
                         background-color: #1f2937;
                         color: #f3f4f6;
-                        margin: 0;
                         padding: 20px;
                     }
                     .container {
@@ -501,11 +576,6 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         overflow-x: auto;
                         white-space: pre-wrap;
                     }
-                    .module-grid {
-                        display: grid;
-                        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-                        gap: 10px;
-                    }
                     button {
                         background-color: #4f46e5;
                         color: white;
@@ -513,19 +583,6 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         border-radius: 4px;
                         padding: 8px 16px;
                         cursor: pointer;
-                    }
-                    .status {
-                        margin-top: 10px;
-                        padding: 8px;
-                        border-radius: 4px;
-                    }
-                    .success {
-                        background-color: rgba(16, 185, 129, 0.2);
-                        color: #10b981;
-                    }
-                    .error {
-                        background-color: rgba(239, 68, 68, 0.2);
-                        color: #ef4444;
                     }
                 </style>
             </head>
@@ -540,7 +597,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                             <button id="load-config">Load Config</button>
                             <button id="load-modules">Load Modules</button>
                         </div>
-                        <div id="status" class="status"></div>
+                        <div id="status"></div>
                         <pre id="output">Click a button above to load data...</pre>
                     </div>
                 </div>
@@ -551,7 +608,6 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         const status = document.getElementById('status');
                         
                         status.textContent = 'Loading config...';
-                        status.className = 'status';
                         
                         try {
                             const response = await fetch('/api/config');
@@ -559,11 +615,9 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                             
                             output.textContent = JSON.stringify(data, null, 2);
                             status.textContent = 'Config loaded successfully!';
-                            status.className = 'status success';
                         } catch (error) {
                             output.textContent = 'Error: ' + error.message;
                             status.textContent = 'Failed to load config';
-                            status.className = 'status error';
                         }
                     });
                     
@@ -572,7 +626,6 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         const status = document.getElementById('status');
                         
                         status.textContent = 'Loading modules...';
-                        status.className = 'status';
                         
                         try {
                             const response = await fetch('/api/modules');
@@ -580,11 +633,9 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                             
                             output.textContent = JSON.stringify(data, null, 2);
                             status.textContent = 'Modules loaded successfully!';
-                            status.className = 'status success';
                         } catch (error) {
                             output.textContent = 'Error: ' + error.message;
                             status.textContent = 'Failed to load modules';
-                            status.className = 'status error';
                         }
                     });
                 </script>
@@ -592,21 +643,21 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             </html>
         """.trimIndent()
     }
-    
+
     /**
      * Generate logo SVG on the fly
      */
     private fun generateLogoSvg(): String {
         return """
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-              <circle cx="50" cy="50" r="40" fill="#4f46e5" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke="#ffffff" stroke-width="4" />
-              <circle cx="50" cy="50" r="17" fill="none" stroke="#ffffff" stroke-width="2.5" />
-              <circle cx="50" cy="50" r="8" fill="#ffffff" />
+                <circle cx="50" cy="50" r="40" fill="#4f46e5" />
+                <circle cx="50" cy="50" r="30" fill="none" stroke="#ffffff" stroke-width="4" />
+                <circle cx="50" cy="50" r="17" fill="none" stroke="#ffffff" stroke-width="2.5" />
+                <circle cx="50" cy="50" r="8" fill="#ffffff" />
             </svg>
         """.trimIndent()
     }
-    
+
     /**
      * Generate CSS on the fly if resource file isn't available
      */
@@ -654,7 +705,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             /* Add more styles as needed */
         """.trimIndent()
     }
-    
+
     /**
      * Generate JavaScript on the fly if resource file isn't available
      */
@@ -683,11 +734,11 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             });
         """.trimIndent()
     }
-    
+
     companion object {
         private var instance: WebServer? = null
         private const val DEFAULT_PORT = 8080
-        
+
         fun start() {
             if (instance == null) {
                 try {
@@ -695,26 +746,22 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                     try {
                         instance = WebServer(DEFAULT_PORT)
                         UChat.chat("§aWeb configuration started at §b§nhttp://localhost:$DEFAULT_PORT§r")
-                        UChat.chat("§7Module UI: §b§nhttp://localhost:$DEFAULT_PORT/modules§r")
-                        UChat.chat("§7Diagnostic page: §b§nhttp://localhost:$DEFAULT_PORT/diagnostic§r")
                     } catch (e: Exception) {
                         // If default port fails, try a few alternatives
                         val alternativePorts = listOf(8081, 8082, 8090, 8000)
                         var success = false
-                        
+
                         for (port in alternativePorts) {
                             try {
                                 instance = WebServer(port)
                                 UChat.chat("§aWeb configuration started at §b§nhttp://localhost:$port§r")
-                                UChat.chat("§7Module UI: §b§nhttp://localhost:$port/modules§r")
-                                UChat.chat("§7Diagnostic page: §b§nhttp://localhost:$port/diagnostic§r")
                                 success = true
                                 break
                             } catch (e2: Exception) {
                                 // Continue trying other ports
                             }
                         }
-                        
+
                         if (!success) {
                             // If all ports fail, log the original error
                             UChat.chat("§cFailed to start web server: ${e.message}")
@@ -724,10 +771,11 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 } catch (e: Throwable) {
                     // Catch any other errors
                     UChat.chat("§cCritical error starting web server: ${e.message}")
+                    e.printStackTrace()
                 }
             }
         }
-        
+
         fun stop() {
             try {
                 instance?.stop()

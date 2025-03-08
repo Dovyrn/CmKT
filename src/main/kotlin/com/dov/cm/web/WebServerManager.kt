@@ -15,41 +15,72 @@ import java.net.URI
 object WebServerManager {
     private var isServerStarted = false
     private var openedBrowser = false
+    private var lastStartAttempt = 0L
     private val WEB_PORT = 8080
+    private const val START_RETRY_DELAY = 10000L // 10 seconds between retry attempts
     private const val WEB_URL = "http://localhost:8080"
 
     fun init() {
+        try {
+            // Check if NanoHTTPD is available
+            val nanoClass = Class.forName("fi.iki.elonen.NanoHTTPD")
+            UChat.chat("§aNanoHTTPD class loaded successfully: ${nanoClass.name}")
+        } catch (e: ClassNotFoundException) {
+            UChat.chat("§cError loading NanoHTTPD class: ${e.message}")
+            UChat.chat("§cWeb configuration will not be available")
+            return
+        }
+
         // Start the server when a world is loaded and stop when leaving
         ClientTickEvents.END_CLIENT_TICK.register { client ->
-            val isInGame = client.world != null && client.player != null
+            try {
+                val isInGame = client.world != null && client.player != null
+                val currentTime = System.currentTimeMillis()
 
-            // Start server when player joins a world
-            if (isInGame && !isServerStarted) {
-                WebServer.start()
-                isServerStarted = true
-                openedBrowser = false
-                UChat.chat("§aWeb configuration launched at §b§nhttp://localhost:$WEB_PORT§r §a(Press §bCTRL+B§a to open)")
-            }
-            // Stop server when player leaves a world
-            else if (!isInGame && isServerStarted) {
-                WebServer.stop()
-                isServerStarted = false
-            }
+                // Start server when player joins a world
+                if (isInGame && !isServerStarted && currentTime - lastStartAttempt > START_RETRY_DELAY) {
+                    lastStartAttempt = currentTime
 
-            // Check for Ctrl+B shortcut to open browser
-            if (isServerStarted && !openedBrowser) {
-                if (GLFW.glfwGetKey(client.window.handle, GLFW.GLFW_KEY_B) == GLFW.GLFW_PRESS &&
-                    GLFW.glfwGetKey(client.window.handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS) {
-
-                    openBrowser()
-                    openedBrowser = true
-
-                    // Debounce the key press
-                    Thread {
-                        Thread.sleep(500)
+                    try {
+                        WebServer.start()
+                        isServerStarted = true
                         openedBrowser = false
-                    }.start()
+                        UChat.chat("§aWeb configuration launched at §b§nhttp://localhost:$WEB_PORT§r §a(Press §bCTRL+B§a to open)")
+                    } catch (e: Exception) {
+                        UChat.chat("§cFailed to start web server: ${e.message}")
+                        isServerStarted = false
+                    }
                 }
+                // Stop server when player leaves a world
+                else if (!isInGame && isServerStarted) {
+                    WebServer.stop()
+                    isServerStarted = false
+                }
+
+                // Check for Ctrl+B shortcut to open browser
+                if (isServerStarted && !openedBrowser) {
+                    val controlPressed = GLFW.glfwGetKey(client.window.handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS ||
+                            GLFW.glfwGetKey(client.window.handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS
+
+                    if (controlPressed &&
+                        GLFW.glfwGetKey(client.window.handle, GLFW.GLFW_KEY_B) == GLFW.GLFW_PRESS) {
+
+                        openBrowser()
+                        openedBrowser = true
+
+                        // Debounce the key press
+                        Thread {
+                            try {
+                                Thread.sleep(500)
+                                openedBrowser = false
+                            } catch (e: Exception) {
+                                // Ignore interruption
+                            }
+                        }.start()
+                    }
+                }
+            } catch (e: Exception) {
+                UChat.chat("§cError in WebServerManager tick: ${e.message}")
             }
         }
 
@@ -68,13 +99,13 @@ object WebServerManager {
     private fun openBrowser() {
         try {
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(URI(WEB_URL))
+                Desktop.getDesktop().browse(URI(WEB_URL + "/modules"))
                 UChat.chat("§aOpened web configuration in browser")
             } else {
-                UChat.chat("§cCouldn't open browser automatically. Please go to §b$WEB_URL§c manually")
+                UChat.chat("§cCouldn't open browser automatically. Please go to §b$WEB_URL/modules§c manually")
             }
         } catch (e: Exception) {
-            UChat.chat("§cError opening browser: ${e.message}. Please go to §b$WEB_URL§c manually")
+            UChat.chat("§cError opening browser: ${e.message}. Please go to §b$WEB_URL/modules§c manually")
         }
     }
 }
