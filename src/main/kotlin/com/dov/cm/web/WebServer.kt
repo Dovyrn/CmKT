@@ -20,20 +20,20 @@ import kotlin.text.Charsets
  */
 class WebServer(port: Int = 8080) : NanoHTTPD(port) {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
-
+    
     init {
         start(SOCKET_READ_TIMEOUT, false)
         UChat.mChat("§aWeb server started on http://localhost:$port")
     }
-
+    
     override fun serve(session: IHTTPSession): Response {
         try {
             val uri = session.uri
             val method = session.method
-
-            // Add CORS headers for development
+            
+            // Add CORS headers for development 
             var response: Response
-
+            
             // Main page
             if (uri == "/" || uri.isEmpty()) {
                 response = newResponse(Response.Status.OK, "text/html", getResource("index.html"))
@@ -51,7 +51,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 val resourcePath = uri.substring(8)
                 val mimeType = getMimeTypeForResource(resourcePath)
                 val resource = getResource(resourcePath)
-
+                
                 if (resource != null) {
                     response = newResponse(Response.Status.OK, mimeType, resource)
                 } else {
@@ -85,10 +85,10 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                     }
                 } catch (e: Exception) {
                     UChat.mChat("§cAPI error: ${e.message}")
-                    e.printStackTrace()
+                    e.printStackTrace(java.lang.System.err)
                     response = newFixedLengthResponse(
-                        Response.Status.INTERNAL_ERROR,
-                        "application/json",
+                        Response.Status.INTERNAL_ERROR, 
+                        "application/json", 
                         "{\"error\":\"API processing error: ${e.message?.replace("\"", "\\\"") ?: "Unknown error"}\"}"
                     )
                 }
@@ -98,21 +98,21 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 UChat.mChat("§cResource not found: $uri")
                 response = newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not Found: $uri")
             }
-
+            
             // Add CORS headers to every response
             response.addHeader("Access-Control-Allow-Origin", "*")
             response.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
             response.addHeader("Access-Control-Allow-Headers", "Content-Type")
-
+            
             return response
-
+            
         } catch (e: Exception) {
             UChat.mChat("§cWeb server error: ${e.message}")
             e.printStackTrace()
             return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "Server error: ${e.message}")
         }
     }
-
+    
     /**
      * Create a new response with the specified content
      */
@@ -123,7 +123,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Resource not found")
         }
     }
-
+    
     /**
      * Get a resource stream from resources folder
      */
@@ -131,7 +131,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         // Load from web resources directory
         val resourcePath = "web/$path"
         val stream = javaClass.classLoader.getResourceAsStream(resourcePath)
-
+        
         // If resource not found in jar, generate it on the fly
         if (stream == null && path == "index.html") {
             return ByteArrayInputStream(generateIndexHtml().toByteArray(Charsets.UTF_8))
@@ -146,10 +146,10 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         } else if (stream == null && path == "app.js") {
             return ByteArrayInputStream(generateJs().toByteArray(Charsets.UTF_8))
         }
-
+        
         return stream
     }
-
+    
     /**
      * Get mime type based on file extension
      */
@@ -166,7 +166,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             else -> "application/octet-stream"
         }
     }
-
+    
     /**
      * Convert Config object to JSON with metadata
      */
@@ -174,16 +174,16 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         val resultObject = JsonObject()
         val valuesObject = JsonObject()
         val metadataObject = JsonObject()
-
+        
         // Get all fields in the Config object
         val fields = Config::class.java.declaredFields
-
+        
         for (field in fields) {
             // Skip static fields, private fields, or fields with synthetic modifiers
             if (Modifier.isStatic(field.modifiers) || field.name.contains("$")) {
                 continue
             }
-
+            
             field.isAccessible = true
             try {
                 // Add the field value to values object
@@ -207,18 +207,18 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         }
                     }
                 }
-
+                
                 // Extract metadata from annotations
                 val propertyAnnotation = field.getAnnotation(gg.essential.vigilance.data.Property::class.java)
                 if (propertyAnnotation != null) {
                     val fieldMetadata = JsonObject()
-
+                    
                     // Get basic properties from annotation
                     fieldMetadata.addProperty("name", propertyAnnotation.name)
                     fieldMetadata.addProperty("description", propertyAnnotation.description)
                     fieldMetadata.addProperty("category", propertyAnnotation.category)
                     fieldMetadata.addProperty("subcategory", propertyAnnotation.subcategory ?: "General")
-
+                    
                     // Get type-specific properties
                     when (propertyAnnotation.type) {
                         gg.essential.vigilance.data.PropertyType.SWITCH -> {
@@ -258,7 +258,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                             fieldMetadata.addProperty("type", "unknown")
                         }
                     }
-
+                    
                     metadataObject.add(field.name, fieldMetadata)
                 }
             } catch (e: Exception) {
@@ -266,27 +266,27 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 UChat.mChat("§cError processing field ${field.name}: ${e.message}")
             }
         }
-
+        
         // We'll just create empty objects for subcategory and category descriptions
         // since the methods don't exist in your Config class
         val subcategoryDescriptions = JsonObject()
         val categoryDescriptions = JsonObject()
-
+        
         // Build the final result
         resultObject.add("values", valuesObject)
         resultObject.add("metadata", metadataObject)
         resultObject.add("subcategoryDescriptions", subcategoryDescriptions)
         resultObject.add("categoryDescriptions", categoryDescriptions)
-
+        
         return gson.toJson(resultObject)
     }
-
+    
     /**
      * Create a simplified modules list
      */
     private fun getModulesJson(): String {
         val rootJson = JsonObject()
-
+        
         // Combat modules
         val combatModules = JsonObject()
         combatModules.addProperty("Mace Dive", Config.maceDiveEnabled)
@@ -294,113 +294,44 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
         combatModules.addProperty("Hitbox", Config.HitboxEnabled)
         combatModules.addProperty("Weapon Swapper", Config.weaponSwapper)
         combatModules.addProperty("Aim Assist", Config.aimAssistEnabled)
-        combatModules.addProperty("Backtrack", Config.backtrackEnabled)
-
+        
         // Render modules
         val renderModules = JsonObject()
         renderModules.addProperty("Target HUD", Config.targetHudToggled)
         renderModules.addProperty("ESP", Config.espEnabled)
         renderModules.addProperty("Chams", Config.chamsEnabled)
         renderModules.addProperty("Storage ESP", Config.storageEspEnabled)
-
+        
         // Utility modules
         val utilityModules = JsonObject()
         utilityModules.addProperty("Sprint", Config.sprint)
         utilityModules.addProperty("No Jump Delay", Config.noJumpDelay)
         utilityModules.addProperty("Full Bright", Config.fullBright)
-
+        
         rootJson.add("Combat", combatModules)
         rootJson.add("Render", renderModules)
         rootJson.add("Utility", utilityModules)
-
+        
         return gson.toJson(rootJson)
     }
-
-    /**
-     * Get dependency map for settings
-     */
-    private fun getDependenciesJson(): String {
-        // This method will return a JSON object mapping dependent settings to their primary toggle
-        val dependencyMap = JsonObject()
-
-        // Mace Dive dependencies
-        arrayOf(
-            "groundDetectionHeight", "attackMode", "autoEquipElytra",
-            "autoSwapChestplate", "boostStrength", "maxHeight"
-        ).forEach { key -> dependencyMap.addProperty(key, "maceDiveEnabled") }
-
-        // Aim Assist dependencies
-        arrayOf(
-            "aimAssistMode", "aimAssistVisibleTime", "aimAssistSmoothing",
-            "aimAssistFOV", "aimAssistRange", "aimAssistRandom",
-            "aimAssistHitbox", "aimAssistWeaponOnly", "aimAssistStickyTarget",
-            "aimAssistTargetPlayers", "aimAssistTargetCrystals",
-            "aimAssistTargetEntities", "stopOnEdge"
-        ).forEach { key -> dependencyMap.addProperty(key, "aimAssistEnabled") }
-
-        // Backtrack dependencies
-        arrayOf(
-            "backtrackMinDistance", "backtrackMaxDistance", "backtrackMaxDelay",
-            "backtrackMaxHurtTime", "backtrackCooldown", "backtrackDisableOnHit",
-            "backtrackWeaponOnly"
-        ).forEach { key -> dependencyMap.addProperty(key, "backtrackEnabled") }
-
-        // Hitbox dependencies
-        arrayOf(
-            "hitboxExpand", "hitboxTargets"
-        ).forEach { key -> dependencyMap.addProperty(key, "HitboxEnabled") }
-
-        // Mace D-Tap dependencies
-        arrayOf(
-            "axePriority", "maceFirstWeapon", "maceSecondWeapon", "switchOnly"
-        ).forEach { key -> dependencyMap.addProperty(key, "maceDTap") }
-
-        // Weapon Swapper dependencies
-        arrayOf(
-            "firstWeapon", "secondWeapon", "weaponSwapBack"
-        ).forEach { key -> dependencyMap.addProperty(key, "weaponSwapper") }
-
-        // Target HUD dependencies
-        arrayOf(
-            "animations", "offsetX", "offsetY", "showHead", "background"
-        ).forEach { key -> dependencyMap.addProperty(key, "targetHudToggled") }
-
-        // Storage ESP dependencies
-        arrayOf(
-            "storageEspTracers",
-            "chestEspEnabled", "chestEspColor",
-            "enderChestEspEnabled", "enderChestEspColor",
-            "trappedChestEspEnabled", "trappedChestEspColor",
-            "hopperEspEnabled", "hopperEspColor",
-            "furnaceEspEnabled", "furnaceEspColor",
-            "shulkerEspEnabled", "shulkerEspColor"
-        ).forEach { key -> dependencyMap.addProperty(key, "storageEspEnabled") }
-
-        // Developer mode dependencies
-        arrayOf(
-            "debugMessages"
-        ).forEach { key -> dependencyMap.addProperty(key, "developerMode") }
-
-        return gson.toJson(dependencyMap)
-    }
-
+    
     /**
      * Update config settings from JSON
      */
     private fun updateConfig(postData: String): Response {
         try {
             val jsonObject = gson.fromJson(postData, JsonObject::class.java)
-
+            
             // Update each setting
             for (entry in jsonObject.entrySet()) {
                 val propName = entry.key
-
+                
                 try {
                     val field = findField(propName)
-
+                    
                     if (field != null) {
                         field.isAccessible = true
-
+                        
                         when (field.type) {
                             Boolean::class.java -> field.setBoolean(Config, entry.value.asBoolean)
                             Int::class.java -> field.setInt(Config, entry.value.asInt)
@@ -421,11 +352,11 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                     UChat.mChat("§cError updating $propName: ${e.message}")
                 }
             }
-
+            
             // Save config changes
             Config.markDirty()
             Config.writeData()
-
+            
             return newFixedLengthResponse(Response.Status.OK, "application/json", "{\"status\":\"success\"}")
         } catch (e: Exception) {
             UChat.mChat("§cError updating config: ${e.message}")
@@ -436,14 +367,14 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             )
         }
     }
-
+    
     /**
      * Reset config to defaults
      */
     private fun resetConfig(): Response {
         try {
             Config.initialize()
-
+            
             return newFixedLengthResponse(Response.Status.OK, "application/json", "{\"status\":\"success\"}")
         } catch (e: Exception) {
             return newFixedLengthResponse(
@@ -453,7 +384,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             )
         }
     }
-
+    
     /**
      * Find a field by name in the Config class
      */
@@ -466,7 +397,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             null
         }
     }
-
+    
     /**
      * Generate basic HTML content on the fly if resource files aren't available
      */
@@ -477,142 +408,43 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Logical Zoom Web Config</title>
-                <link rel="stylesheet" href="/static/styles.css">
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+                <meta http-equiv="refresh" content="0;url=/modules">
+                <title>Logical Zoom Config</title>
+                <style>
+                    body {
+                        font-family: sans-serif;
+                        background-color: #1f2937;
+                        color: white;
+                        text-align: center;
+                        padding-top: 100px;
+                    }
+                    p {
+                        margin-top: 20px;
+                    }
+                    a {
+                        color: #4f46e5;
+                        text-decoration: none;
+                    }
+                    a:hover {
+                        text-decoration: underline;
+                    }
+                </style>
             </head>
             <body>
-                <div class="sidebar">
-                    <div class="logo">
-                        <img src="/static/logo.svg" alt="Logical Zoom">
-                        <h1>Logical Zoom Config</h1>
-                    </div>
-                    <nav>
-                        <ul id="category-nav">
-                            <!-- Categories will be added here dynamically -->
-                        </ul>
-                    </nav>
-                    <div class="sidebar-footer">
-                        <button id="save-config" class="save-button">Save Config</button>
-                        <button id="reset-config" class="reset-button">Reset Defaults</button>
-                    </div>
-                </div>
-
-                <div class="main-content">
-                    <div class="header">
-                        <h2 id="current-category">Loading...</h2>
-                        <div class="search-container">
-                            <input type="text" id="search" placeholder="Search settings...">
-                            <i class="fas fa-search"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="modules-overview" id="modules-container">
-                        <!-- Module toggles will be displayed here when "Overview" is selected -->
-                    </div>
-
-                    <div class="settings-container" id="settings-container">
-                        <!-- Settings will be loaded here dynamically -->
-                    </div>
-
-                    <div class="status-message" id="status-message"></div>
-                </div>
-
-                <!-- Templates for different setting types -->
-                <template id="switch-template">
-                    <div class="setting-item switch-setting">
-                        <div class="setting-info">
-                            <div class="setting-name"></div>
-                            <div class="setting-description"></div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                </template>
-
-                <template id="slider-template">
-                    <div class="setting-item slider-setting">
-                        <div class="setting-info">
-                            <div class="setting-name"></div>
-                            <div class="setting-description"></div>
-                        </div>
-                        <div class="slider-container">
-                            <input type="range" min="0" max="100" value="50" class="range-slider">
-                            <div class="value-display"></div>
-                        </div>
-                    </div>
-                </template>
-
-                <template id="text-template">
-                    <div class="setting-item text-setting">
-                        <div class="setting-info">
-                            <div class="setting-name"></div>
-                            <div class="setting-description"></div>
-                        </div>
-                        <input type="text" class="text-input">
-                    </div>
-                </template>
-
-                <template id="color-template">
-                    <div class="setting-item color-setting">
-                        <div class="setting-info">
-                            <div class="setting-name"></div>
-                            <div class="setting-description"></div>
-                        </div>
-                        <div class="color-picker-container">
-                            <input type="color" class="color-picker">
-                            <input type="range" min="0" max="255" value="255" class="alpha-slider">
-                            <div class="color-preview"></div>
-                        </div>
-                    </div>
-                </template>
-
-                <template id="selector-template">
-                    <div class="setting-item selector-setting">
-                        <div class="setting-info">
-                            <div class="setting-name"></div>
-                            <div class="setting-description"></div>
-                        </div>
-                        <select class="selector"></select>
-                    </div>
-                </template>
-
-                <template id="subcategory-template">
-                    <div class="subcategory">
-                        <h3 class="subcategory-title"></h3>
-                        <div class="subcategory-description"></div>
-                        <div class="settings-list"></div>
-                    </div>
-                </template>
-
-                <script src="/static/app.js"></script>
+                <h1>Redirecting to Module Settings...</h1>
+                <p>If you are not redirected automatically, <a href="/modules">click here</a>.</p>
             </body>
             </html>
         """.trimIndent()
     }
-
-    /**
-     * Generate logo SVG on the fly
-     */
-    private fun generateLogoSvg(): String {
-        return """
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-              <circle cx="50" cy="50" r="40" fill="#4f46e5" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke="#ffffff" stroke-width="4" />
-              <circle cx="50" cy="50" r="17" fill="none" stroke="#ffffff" stroke-width="2.5" />
-              <circle cx="50" cy="50" r="8" fill="#ffffff" />
-            </svg>
-        """.trimIndent()
-    }
-
+    
     /**
      * Generate module settings HTML content on the fly
      */
     private fun generateModuleSettingsHtml(): String {
-        // This is just a simplified placeholder with a redirect to the diagnostic page
-        // The actual content is in module-settings.html which will be added to resources
+        // This returns the content of the improved-module-settings.html file
+        // I'm not including it here due to its size, but it's the HTML file I provided
+        // This is just a simplified placeholder
         return """
             <!DOCTYPE html>
             <html lang="en">
@@ -623,12 +455,13 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 <title>Logical Zoom Config</title>
             </head>
             <body>
+                <p>Please use the static resources for the full module settings UI.</p>
                 <p>Redirecting to diagnostic page...</p>
             </body>
             </html>
         """.trimIndent()
     }
-
+    
     /**
      * Generate diagnostic HTML content on the fly
      */
@@ -681,6 +514,19 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         padding: 8px 16px;
                         cursor: pointer;
                     }
+                    .status {
+                        margin-top: 10px;
+                        padding: 8px;
+                        border-radius: 4px;
+                    }
+                    .success {
+                        background-color: rgba(16, 185, 129, 0.2);
+                        color: #10b981;
+                    }
+                    .error {
+                        background-color: rgba(239, 68, 68, 0.2);
+                        color: #ef4444;
+                    }
                 </style>
             </head>
             <body>
@@ -694,7 +540,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                             <button id="load-config">Load Config</button>
                             <button id="load-modules">Load Modules</button>
                         </div>
-                        <div id="status"></div>
+                        <div id="status" class="status"></div>
                         <pre id="output">Click a button above to load data...</pre>
                     </div>
                 </div>
@@ -705,6 +551,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         const status = document.getElementById('status');
                         
                         status.textContent = 'Loading config...';
+                        status.className = 'status';
                         
                         try {
                             const response = await fetch('/api/config');
@@ -712,9 +559,11 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                             
                             output.textContent = JSON.stringify(data, null, 2);
                             status.textContent = 'Config loaded successfully!';
+                            status.className = 'status success';
                         } catch (error) {
                             output.textContent = 'Error: ' + error.message;
                             status.textContent = 'Failed to load config';
+                            status.className = 'status error';
                         }
                     });
                     
@@ -723,6 +572,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                         const status = document.getElementById('status');
                         
                         status.textContent = 'Loading modules...';
+                        status.className = 'status';
                         
                         try {
                             const response = await fetch('/api/modules');
@@ -730,9 +580,11 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                             
                             output.textContent = JSON.stringify(data, null, 2);
                             status.textContent = 'Modules loaded successfully!';
+                            status.className = 'status success';
                         } catch (error) {
                             output.textContent = 'Error: ' + error.message;
                             status.textContent = 'Failed to load modules';
+                            status.className = 'status error';
                         }
                     });
                 </script>
@@ -740,7 +592,21 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             </html>
         """.trimIndent()
     }
-
+    
+    /**
+     * Generate logo SVG on the fly
+     */
+    private fun generateLogoSvg(): String {
+        return """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+              <circle cx="50" cy="50" r="40" fill="#4f46e5" />
+              <circle cx="50" cy="50" r="30" fill="none" stroke="#ffffff" stroke-width="4" />
+              <circle cx="50" cy="50" r="17" fill="none" stroke="#ffffff" stroke-width="2.5" />
+              <circle cx="50" cy="50" r="8" fill="#ffffff" />
+            </svg>
+        """.trimIndent()
+    }
+    
     /**
      * Generate CSS on the fly if resource file isn't available
      */
@@ -788,7 +654,7 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             /* Add more styles as needed */
         """.trimIndent()
     }
-
+    
     /**
      * Generate JavaScript on the fly if resource file isn't available
      */
@@ -817,11 +683,11 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
             });
         """.trimIndent()
     }
-
+    
     companion object {
         private var instance: WebServer? = null
         private const val DEFAULT_PORT = 8080
-
+        
         fun start() {
             if (instance == null) {
                 try {
@@ -829,22 +695,26 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                     try {
                         instance = WebServer(DEFAULT_PORT)
                         UChat.chat("§aWeb configuration started at §b§nhttp://localhost:$DEFAULT_PORT§r")
+                        UChat.chat("§7Module UI: §b§nhttp://localhost:$DEFAULT_PORT/modules§r")
+                        UChat.chat("§7Diagnostic page: §b§nhttp://localhost:$DEFAULT_PORT/diagnostic§r")
                     } catch (e: Exception) {
                         // If default port fails, try a few alternatives
                         val alternativePorts = listOf(8081, 8082, 8090, 8000)
                         var success = false
-
+                        
                         for (port in alternativePorts) {
                             try {
                                 instance = WebServer(port)
                                 UChat.chat("§aWeb configuration started at §b§nhttp://localhost:$port§r")
+                                UChat.chat("§7Module UI: §b§nhttp://localhost:$port/modules§r")
+                                UChat.chat("§7Diagnostic page: §b§nhttp://localhost:$port/diagnostic§r")
                                 success = true
                                 break
                             } catch (e2: Exception) {
                                 // Continue trying other ports
                             }
                         }
-
+                        
                         if (!success) {
                             // If all ports fail, log the original error
                             UChat.chat("§cFailed to start web server: ${e.message}")
@@ -854,11 +724,10 @@ class WebServer(port: Int = 8080) : NanoHTTPD(port) {
                 } catch (e: Throwable) {
                     // Catch any other errors
                     UChat.chat("§cCritical error starting web server: ${e.message}")
-                    e.printStackTrace()
                 }
             }
         }
-
+        
         fun stop() {
             try {
                 instance?.stop()

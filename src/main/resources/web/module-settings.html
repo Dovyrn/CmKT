@@ -19,7 +19,7 @@
             --warning: #f59e0b;
             --border-radius: 8px;
         }
-
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--dark-bg);
@@ -27,23 +27,23 @@
             margin: 0;
             padding: 20px;
         }
-
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
-
+        
         h1, h2, h3 {
             color: var(--light-text);
         }
-
+        
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-
+        
         button {
             background-color: var(--primary-color);
             color: white;
@@ -54,44 +54,44 @@
             margin-right: 8px;
             transition: background-color 0.2s;
         }
-
+        
         button:hover {
             background-color: var(--primary-hover);
         }
-
+        
         button.danger {
             background-color: var(--danger);
         }
-
+        
         button.danger:hover {
             background-color: #b91c1c;
         }
-
+        
         .status {
             padding: 10px;
             border-radius: var(--border-radius);
             margin: 10px 0;
         }
-
+        
         .success {
             background-color: rgba(16, 185, 129, 0.2);
             border: 1px solid var(--success);
         }
-
+        
         .error {
             background-color: rgba(239, 68, 68, 0.2);
             border: 1px solid var(--danger);
         }
-
+        
         .info {
             background-color: rgba(59, 130, 246, 0.2);
             border: 1px solid #3b82f6;
         }
-
+        
         .category-section {
             margin-bottom: 30px;
         }
-
+        
         .category-header {
             background-color: var(--primary-color);
             color: white;
@@ -99,7 +99,7 @@
             border-radius: var(--border-radius) var(--border-radius) 0 0;
             font-weight: bold;
         }
-
+        
         .module-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -108,7 +108,7 @@
             background-color: var(--darker-bg);
             border-radius: 0 0 var(--border-radius) var(--border-radius);
         }
-
+        
         .module-card {
             background-color: var(--light-bg);
             border-radius: var(--border-radius);
@@ -116,7 +116,7 @@
             transition: all 0.3s;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
+        
         .module-header {
             display: flex;
             justify-content: space-between;
@@ -124,17 +124,17 @@
             padding: 15px;
             background-color: rgba(0, 0, 0, 0.15);
         }
-
+        
         .module-name {
             font-weight: bold;
         }
-
+        
         .module-controls {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-
+        
         .settings-toggle {
             background: none;
             border: none;
@@ -145,24 +145,24 @@
             margin: 0;
             transition: color 0.2s;
         }
-
+        
         .settings-toggle:hover {
             color: var(--primary-color);
         }
-
+        
         .switch {
             position: relative;
             display: inline-block;
             width: 50px;
             height: 24px;
         }
-
+        
         .switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
-
+        
         .slider {
             position: absolute;
             cursor: pointer;
@@ -174,7 +174,7 @@
             transition: .4s;
             border-radius: 24px;
         }
-
+        
         .slider:before {
             position: absolute;
             content: "";
@@ -186,50 +186,50 @@
             transition: .4s;
             border-radius: 50%;
         }
-
+        
         input:checked + .slider {
             background-color: var(--primary-color);
         }
-
+        
         input:checked + .slider:before {
             transform: translateX(26px);
         }
-
+        
         .module-settings {
             padding: 15px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             display: none;
         }
-
+        
         .setting-item {
             margin-bottom: 15px;
             padding-bottom: 15px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-
+        
         .setting-item:last-child {
             margin-bottom: 0;
             padding-bottom: 0;
             border-bottom: none;
         }
-
+        
         .setting-name {
             font-weight: bold;
             margin-bottom: 5px;
         }
-
+        
         .setting-description {
             font-size: 0.9em;
             color: var(--medium-text);
             margin-bottom: 10px;
         }
-
+        
         .setting-control {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
+        
         /* Slider styles */
         .slider-container {
             display: flex;
@@ -237,7 +237,7 @@
             gap: 10px;
             width: 100%;
         }
-
+        
         input[type="range"] {
             flex: 1;
             height: 8px;
@@ -246,7 +246,7 @@
             appearance: none;
             outline: none;
         }
-
+        
         input[type="range"]::-webkit-slider-thumb {
             appearance: none;
             width: 16px;
@@ -255,12 +255,12 @@
             background: var(--primary-color);
             cursor: pointer;
         }
-
+        
         .value-display {
             min-width: 40px;
             text-align: right;
         }
-
+        
         /* Text input styles */
         input[type="text"] {
             background-color: var(--darker-bg);
@@ -270,14 +270,14 @@
             border-radius: var(--border-radius);
             width: 100%;
         }
-
+        
         /* Color picker styles */
         .color-container {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-
+        
         input[type="color"] {
             border: none;
             border-radius: 4px;
@@ -285,14 +285,14 @@
             height: 40px;
             cursor: pointer;
         }
-
+        
         .color-preview {
             width: 24px;
             height: 24px;
             border-radius: 4px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
+        
         /* Selector styles */
         select {
             background-color: var(--darker-bg);
@@ -302,16 +302,16 @@
             border-radius: var(--border-radius);
             width: 100%;
         }
-
+        
         /* Expanded state */
         .module-card.expanded {
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
-
+        
         .module-card.expanded .module-settings {
             display: block;
         }
-
+        
         .action-buttons {
             position: sticky;
             bottom: 20px;
@@ -324,676 +324,690 @@
             z-index: 100;
             margin-top: 20px;
         }
-
+        
         .action-buttons button {
             padding: 10px 20px;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <header>
-        <h1>Logical Zoom Configuration</h1>
-        <div>
-            <button id="save-changes">Save All Changes</button>
-            <button id="reset-config" class="danger">Reset to Defaults</button>
+    <div class="container">
+        <header>
+            <h1>Logical Zoom Configuration</h1>
+            <div>
+                <button id="save-changes">Save All Changes</button>
+                <button id="reset-config" class="danger">Reset to Defaults</button>
+            </div>
+        </header>
+        
+        <div id="status-message" class="status info">Loading configuration...</div>
+        
+        <div id="modules-container">
+            <!-- Categories and modules will be loaded here -->
         </div>
-    </header>
-
-    <div id="status-message" class="status info">Loading configuration...</div>
-
-    <div id="modules-container">
-        <!-- Categories and modules will be loaded here -->
+        
+        <div class="action-buttons">
+            <div>
+                <span id="changes-count">0 changes</span>
+            </div>
+            <div>
+                <button id="save-changes-bottom">Save All Changes</button>
+            </div>
+        </div>
     </div>
 
-    <div class="action-buttons">
-        <div>
-            <span id="changes-count">0 changes</span>
-        </div>
-        <div>
-            <button id="save-changes-bottom">Save All Changes</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Store configuration data
-    let configData = null;
-    let metadataData = null;
-    let modulesData = null;
-    let pendingChanges = {};
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            await loadConfig();
-            await loadModules();
-            setupEventListeners();
-
-            document.getElementById('status-message').textContent = 'Configuration loaded successfully';
-            document.getElementById('status-message').className = 'status success';
-            setTimeout(() => {
-                document.getElementById('status-message').style.display = 'none';
-            }, 3000);
-        } catch (error) {
-            document.getElementById('status-message').textContent = `Error: ${error.message}`;
-            document.getElementById('status-message').className = 'status error';
-        }
-    });
-
-    // Load configuration
-    async function loadConfig() {
-        try {
-            const response = await fetch('/api/config');
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+    <script>
+        // Store configuration data
+        let configData = null;
+        let metadataData = null;
+        let modulesData = null;
+        let pendingChanges = {};
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await loadConfig();
+                await loadModules();
+                setupEventListeners();
+                
+                document.getElementById('status-message').textContent = 'Configuration loaded successfully';
+                document.getElementById('status-message').className = 'status success';
+                setTimeout(() => {
+                    document.getElementById('status-message').style.display = 'none';
+                }, 3000);
+            } catch (error) {
+                document.getElementById('status-message').textContent = `Error: ${error.message}`;
+                document.getElementById('status-message').className = 'status error';
             }
-
-            const data = await response.json();
-            configData = data.values;
-            metadataData = data.metadata;
-
-            console.log('Config loaded:', configData);
-            console.log('Metadata loaded:', metadataData);
-
-            return data;
-        } catch (error) {
-            console.error('Error loading config:', error);
-            throw error;
-        }
-    }
-
-    // Load modules
-    async function loadModules() {
-        try {
-            const response = await fetch('/api/modules');
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+        });
+        
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                configData = data.values;
+                metadataData = data.metadata;
+                
+                console.log('Config loaded:', configData);
+                console.log('Metadata loaded:', metadataData);
+                
+                return data;
+            } catch (error) {
+                console.error('Error loading config:', error);
+                throw error;
             }
-
-            modulesData = await response.json();
-            renderModules();
-
-            return modulesData;
-        } catch (error) {
-            console.error('Error loading modules:', error);
-            throw error;
         }
-    }
-
-    // Render modules overview
-    function renderModules() {
-        const container = document.getElementById('modules-container');
-        container.innerHTML = '';
-
-        console.log('Modules data:', modulesData);
-        console.log('Metadata:', metadataData);
-
-        // Organize metadata by subcategory for easier access
-        const metadataBySubcategory = organizeMetadataBySubcategory();
-        console.log('Organized Metadata:', metadataBySubcategory);
-
-        // Create sections for each category in modulesData
-        for (const category in modulesData) {
-            const categorySection = document.createElement('div');
-            categorySection.className = 'category-section';
-
-            const categoryHeader = document.createElement('div');
-            categoryHeader.className = 'category-header';
-            categoryHeader.textContent = category;
-
-            const moduleGrid = document.createElement('div');
-            moduleGrid.className = 'module-grid';
-
-            // Add module cards for this category
-            for (const moduleName in modulesData[category]) {
-                const enabled = modulesData[category][moduleName];
-                const configKey = findConfigKeyForModule(moduleName);
-
-                console.log(`Module: ${moduleName}, Enabled: ${enabled}, ConfigKey: ${configKey}`);
-
-                // Identify subcategories related to this module
-                let relatedSubcategories = [];
-                if (configKey && metadataBySubcategory[category]) {
-                    console.log('Searching for related subcategories');
-                    const moduleBaseName = moduleName.replace(/\s+/g, '').toLowerCase();
-
-                    for (const subcategory in metadataBySubcategory[category]) {
-                        console.log(`Checking subcategory: ${subcategory}`);
-                        for (const key in metadataBySubcategory[category][subcategory]) {
-                            if (key === configKey) {
-                                console.log(`Found related subcategory: ${subcategory}`);
+        
+        // Load modules
+        async function loadModules() {
+            try {
+                const response = await fetch('/api/modules');
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                }
+                
+                modulesData = await response.json();
+                renderModules();
+                
+                return modulesData;
+            } catch (error) {
+                console.error('Error loading modules:', error);
+                throw error;
+            }
+        }
+        
+        // Render modules overview
+        function renderModules() {
+            const container = document.getElementById('modules-container');
+            container.innerHTML = '';
+            
+            // Organize metadata by subcategory for easier access
+            const metadataBySubcategory = organizeMetadataBySubcategory();
+            
+            // Create sections for each category in modulesData
+            for (const category in modulesData) {
+                const categorySection = document.createElement('div');
+                categorySection.className = 'category-section';
+                
+                const categoryHeader = document.createElement('div');
+                categoryHeader.className = 'category-header';
+                categoryHeader.textContent = category;
+                
+                const moduleGrid = document.createElement('div');
+                moduleGrid.className = 'module-grid';
+                
+                // Add module cards for this category
+                for (const moduleName in modulesData[category]) {
+                    const enabled = modulesData[category][moduleName];
+                    const configKey = findConfigKeyForModule(moduleName);
+                    
+                    // Identify subcategories related to this module
+                    let relatedSubcategories = [];
+                    if (configKey && metadataBySubcategory[category]) {
+                        // Find subcategories that might be related to this module
+                        const moduleBaseName = moduleName.replace(/\s+/g, '').toLowerCase();
+                        
+                        for (const subcategory in metadataBySubcategory[category]) {
+                            // Check if this subcategory seems to be related to the module
+                            if (subcategory.toLowerCase().includes(moduleBaseName) || 
+                                moduleBaseName.includes(subcategory.toLowerCase())) {
                                 relatedSubcategories.push(subcategory);
-                                break;
+                            }
+                        }
+                        
+                        // If no match by name, check if there's a direct module property
+                        if (relatedSubcategories.length === 0) {
+                            for (const subcategory in metadataBySubcategory[category]) {
+                                for (const key in metadataBySubcategory[category][subcategory]) {
+                                    if (key === configKey) {
+                                        relatedSubcategories.push(subcategory);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Handle special cases where we know the mappings
+                        if (relatedSubcategories.length === 0) {
+                            const specialMappings = {
+                                'Target HUD': ['TargetHUD'],
+                                'Storage ESP': ['Storage ESP', 'Storage ESP Types'],
+                                'Hitbox': ['Hitbox'],
+                                'Mace Dive': ['Mace Dive'],
+                                'Mace D-Tap': ['Mace D-Tap'],
+                                'Aim Assist': ['Aim Assist', 'Aim Assist Targets'],
+                                'Weapon Swapper': ['Weapon Swapper']
+                            };
+                            
+                            if (specialMappings[moduleName]) {
+                                relatedSubcategories = specialMappings[moduleName];
                             }
                         }
                     }
-
-                    console.log('Related subcategories:', relatedSubcategories);
+                    
+                    const moduleCard = createModuleCard(moduleName, enabled, configKey, category, relatedSubcategories);
+                    moduleGrid.appendChild(moduleCard);
                 }
-
-                const moduleCard = createModuleCard(
-                    moduleName,
-                    enabled,
-                    configKey,
-                    category,
-                    relatedSubcategories
-                );
-                moduleGrid.appendChild(moduleCard);
+                
+                categorySection.appendChild(categoryHeader);
+                categorySection.appendChild(moduleGrid);
+                container.appendChild(categorySection);
             }
-
-            categorySection.appendChild(categoryHeader);
-            categorySection.appendChild(moduleGrid);
-            container.appendChild(categorySection);
         }
-    }
-
-    // Organize metadata by category and subcategory
-    function organizeMetadataBySubcategory() {
-        const organized = {};
-
-        for (const key in metadataData) {
-            const meta = metadataData[key];
-            if (!meta) continue;
-
-            const category = meta.category;
-            const subcategory = meta.subcategory || 'General';
-
-            if (!organized[category]) {
-                organized[category] = {};
+        
+        // Organize metadata by category and subcategory
+        function organizeMetadataBySubcategory() {
+            const organized = {};
+            
+            for (const key in metadataData) {
+                const meta = metadataData[key];
+                if (!meta) continue;
+                
+                const category = meta.category;
+                const subcategory = meta.subcategory || 'General';
+                
+                if (!organized[category]) {
+                    organized[category] = {};
+                }
+                
+                if (!organized[category][subcategory]) {
+                    organized[category][subcategory] = {};
+                }
+                
+                organized[category][subcategory][key] = {
+                    ...meta,
+                    key,
+                    value: configData[key]
+                };
             }
-
-            if (!organized[category][subcategory]) {
-                organized[category][subcategory] = {};
+            
+            return organized;
+        }
+        
+        // Create a module card
+        function createModuleCard(name, enabled, configKey, category, relatedSubcategories) {
+            const card = document.createElement('div');
+            card.className = 'module-card';
+            
+            // Create header with name and toggle
+            const header = document.createElement('div');
+            header.className = 'module-header';
+            
+            const nameElement = document.createElement('div');
+            nameElement.className = 'module-name';
+            nameElement.textContent = name;
+            
+            const controls = document.createElement('div');
+            controls.className = 'module-controls';
+            
+            // Add settings button if we have related settings
+            if (relatedSubcategories && relatedSubcategories.length > 0) {
+                const settingsButton = document.createElement('button');
+                settingsButton.className = 'settings-toggle';
+                settingsButton.innerHTML = '<i class="fas fa-cog"></i>';
+                settingsButton.title = 'Module Settings';
+                settingsButton.addEventListener('click', () => toggleSettings(card));
+                controls.appendChild(settingsButton);
             }
-
-            organized[category][subcategory][key] = {
-                ...meta,
-                key,
-                value: configData[key]
-            };
+            
+            // Add toggle switch
+            const toggle = document.createElement('label');
+            toggle.className = 'switch';
+            
+            const checkboxInput = document.createElement('input');
+            checkboxInput.type = 'checkbox';
+            checkboxInput.checked = enabled;
+            
+            if (configKey) {
+                card.dataset.configKey = configKey;
+                
+                // Add change listener
+                checkboxInput.addEventListener('change', function() {
+                    pendingChanges[configKey] = this.checked;
+                    updateChangesCount();
+                });
+            }
+            
+            const slider = document.createElement('span');
+            slider.className = 'slider';
+            
+            toggle.appendChild(checkboxInput);
+            toggle.appendChild(slider);
+            controls.appendChild(toggle);
+            
+            header.appendChild(nameElement);
+            header.appendChild(controls);
+            card.appendChild(header);
+            
+            // Create settings panel (initially hidden)
+            if (relatedSubcategories && relatedSubcategories.length > 0) {
+                const settingsPanel = document.createElement('div');
+                settingsPanel.className = 'module-settings';
+                
+                const organizedMetadata = organizeMetadataBySubcategory();
+                
+                // Add settings from all related subcategories
+                relatedSubcategories.forEach(subcategory => {
+                    if (organizedMetadata[category] && organizedMetadata[category][subcategory]) {
+                        // Skip the main toggle which is already in the header
+                        const skipKeys = [configKey];
+                        
+                        // Process each setting in this subcategory
+                        for (const key in organizedMetadata[category][subcategory]) {
+                            if (skipKeys.includes(key)) continue;
+                            
+                            const settingData = organizedMetadata[category][subcategory][key];
+                            const settingElement = createSettingElement(key, settingData);
+                            
+                            if (settingElement) {
+                                settingsPanel.appendChild(settingElement);
+                            }
+                        }
+                    }
+                });
+                
+                card.appendChild(settingsPanel);
+            }
+            
+            return card;
         }
-
-        return organized;
-    }
-
-    // Create a module card
-    function createModuleCard(name, enabled, configKey, category, relatedSubcategories) {
-        console.log(`Creating module card: ${name}`);
-        console.log('Config Key:', configKey);
-        console.log('Related Subcategories:', relatedSubcategories);
-
-        const card = document.createElement('div');
-        card.className = 'module-card';
-
-        // Create header with name and toggle
-        const header = document.createElement('div');
-        header.className = 'module-header';
-
-        const nameElement = document.createElement('div');
-        nameElement.className = 'module-name';
-        nameElement.textContent = name;
-
-        const controls = document.createElement('div');
-        controls.className = 'module-controls';
-
-        // Add settings button if we have settings
-        const settingsButton = document.createElement('button');
-        settingsButton.className = 'settings-toggle';
-        settingsButton.innerHTML = '<i class="fas fa-cog"></i>';
-        settingsButton.title = 'Module Settings';
-
-        // Determine if we should show the settings button
-        const hasSettings = configKey &&
-            (relatedSubcategories && relatedSubcategories.length > 0);
-
-        console.log('Has Settings:', hasSettings);
-
-        if (hasSettings) {
-            settingsButton.addEventListener('click', () => toggleSettings(card));
-            controls.appendChild(settingsButton);
+        
+        // Toggle settings panel visibility
+        function toggleSettings(card) {
+            card.classList.toggle('expanded');
         }
-
-        // Add toggle switch
-        const toggle = document.createElement('label');
-        toggle.className = 'switch';
-
-        const checkboxInput = document.createElement('input');
-        checkboxInput.type = 'checkbox';
-        checkboxInput.checked = enabled;
-
-        if (configKey) {
-            card.dataset.configKey = configKey;
-
+        
+        // Create a setting control element
+        function createSettingElement(key, settingData) {
+            if (!settingData) return null;
+            
+            const settingItem = document.createElement('div');
+            settingItem.className = 'setting-item';
+            settingItem.dataset.key = key;
+            
+            // Setting name and description
+            const nameElement = document.createElement('div');
+            nameElement.className = 'setting-name';
+            nameElement.textContent = settingData.name || key;
+            
+            const descElement = document.createElement('div');
+            descElement.className = 'setting-description';
+            descElement.textContent = settingData.description || '';
+            
+            // Control element based on type
+            const controlElement = document.createElement('div');
+            controlElement.className = 'setting-control';
+            
+            // Choose control type based on metadata
+            switch (settingData.type) {
+                case 'switch':
+                    addSwitchControl(controlElement, key, settingData.value);
+                    break;
+                    
+                case 'slider':
+                    addSliderControl(controlElement, key, settingData);
+                    break;
+                    
+                case 'text':
+                    addTextControl(controlElement, key, settingData);
+                    break;
+                    
+                case 'color':
+                    addColorControl(controlElement, key, settingData.value);
+                    break;
+                    
+                case 'selector':
+                    addSelectorControl(controlElement, key, settingData);
+                    break;
+                    
+                default:
+                    // For unknown types, just show the value
+                    controlElement.textContent = settingData.value;
+            }
+            
+            // Add elements to the setting item
+            settingItem.appendChild(nameElement);
+            settingItem.appendChild(descElement);
+            settingItem.appendChild(controlElement);
+            
+            return settingItem;
+        }
+        
+        // Add a switch control
+        function addSwitchControl(container, key, value) {
+            const toggle = document.createElement('label');
+            toggle.className = 'switch';
+            
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = value === true;
+            
             // Add change listener
-            checkboxInput.addEventListener('change', function() {
-                pendingChanges[configKey] = this.checked;
+            input.addEventListener('change', function() {
+                pendingChanges[key] = this.checked;
                 updateChangesCount();
             });
+            
+            const slider = document.createElement('span');
+            slider.className = 'slider';
+            
+            toggle.appendChild(input);
+            toggle.appendChild(slider);
+            container.appendChild(toggle);
         }
-
-        const slider = document.createElement('span');
-        slider.className = 'slider';
-
-        toggle.appendChild(checkboxInput);
-        toggle.appendChild(slider);
-        controls.appendChild(toggle);
-
-        header.appendChild(nameElement);
-        header.appendChild(controls);
-        card.appendChild(header);
-
-        // Logging for settings panel creation
-        if (hasSettings) {
-            console.log('Creating settings panel for:', name);
-            const settingsPanel = document.createElement('div');
-            settingsPanel.className = 'module-settings';
-
-            // Add placeholder to verify settings creation
-            settingsPanel.innerHTML = `<div class="setting-item">Settings for ${name}</div>`;
-
-            card.appendChild(settingsPanel);
-        }
-
-        return card;
-    }
-
-    // Toggle settings panel visibility
-    function toggleSettings(card) {
-        card.classList.toggle('expanded');
-    }
-
-    // Create a setting control element
-    function createSettingElement(key, settingData) {
-        if (!settingData) return null;
-
-        const settingItem = document.createElement('div');
-        settingItem.className = 'setting-item';
-        settingItem.dataset.key = key;
-
-        // Setting name and description
-        const nameElement = document.createElement('div');
-        nameElement.className = 'setting-name';
-        nameElement.textContent = settingData.name || key;
-
-        const descElement = document.createElement('div');
-        descElement.className = 'setting-description';
-        descElement.textContent = settingData.description || '';
-
-        // Control element based on type
-        const controlElement = document.createElement('div');
-        controlElement.className = 'setting-control';
-
-        // Choose control type based on metadata
-        switch (settingData.type) {
-            case 'switch':
-                addSwitchControl(controlElement, key, settingData.value);
-                break;
-
-            case 'slider':
-                addSliderControl(controlElement, key, settingData);
-                break;
-
-            case 'text':
-                addTextControl(controlElement, key, settingData);
-                break;
-
-            case 'color':
-                addColorControl(controlElement, key, settingData.value);
-                break;
-
-            case 'selector':
-                addSelectorControl(controlElement, key, settingData);
-                break;
-
-            default:
-                // For unknown types, just show the value
-                controlElement.textContent = settingData.value;
-        }
-
-        // Add elements to the setting item
-        settingItem.appendChild(nameElement);
-        settingItem.appendChild(descElement);
-        settingItem.appendChild(controlElement);
-
-        return settingItem;
-    }
-
-    // Add a switch control
-    function addSwitchControl(container, key, value) {
-        const toggle = document.createElement('label');
-        toggle.className = 'switch';
-
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.checked = value === true;
-
-        // Add change listener
-        input.addEventListener('change', function() {
-            pendingChanges[key] = this.checked;
-            updateChangesCount();
-        });
-
-        const slider = document.createElement('span');
-        slider.className = 'slider';
-
-        toggle.appendChild(input);
-        toggle.appendChild(slider);
-        container.appendChild(toggle);
-    }
-
-    // Add a slider control
-    function addSliderControl(container, key, setting) {
-        const sliderContainer = document.createElement('div');
-        sliderContainer.className = 'slider-container';
-
-        const input = document.createElement('input');
-        input.type = 'range';
-        input.min = setting.min || 0;
-        input.max = setting.max || 100;
-        input.step = setting.step || (setting.format === 'percent' ? 0.01 : 1);
-        input.value = setting.value;
-
-        const display = document.createElement('div');
-        display.className = 'value-display';
-
-        // Format the display value
-        function updateDisplayValue() {
-            if (setting.format === 'percent') {
-                display.textContent = `${Math.round(input.value * 100)}%`;
-            } else {
-                display.textContent = parseFloat(input.value).toFixed(input.step < 1 ? 2 : 0);
+        
+        // Add a slider control
+        function addSliderControl(container, key, setting) {
+            const sliderContainer = document.createElement('div');
+            sliderContainer.className = 'slider-container';
+            
+            const input = document.createElement('input');
+            input.type = 'range';
+            input.min = setting.min || 0;
+            input.max = setting.max || 100;
+            input.step = setting.step || (setting.format === 'percent' ? 0.01 : 1);
+            input.value = setting.value;
+            
+            const display = document.createElement('div');
+            display.className = 'value-display';
+            
+            // Format the display value
+            function updateDisplayValue() {
+                if (setting.format === 'percent') {
+                    display.textContent = `${Math.round(input.value * 100)}%`;
+                } else {
+                    display.textContent = parseFloat(input.value).toFixed(input.step < 1 ? 2 : 0);
+                }
             }
-        }
-
-        updateDisplayValue();
-
-        // Add input event for live updates
-        input.addEventListener('input', function() {
+            
             updateDisplayValue();
-            const numValue = parseFloat(this.value);
-            pendingChanges[key] = numValue;
-            updateChangesCount();
-        });
-
-        sliderContainer.appendChild(input);
-        sliderContainer.appendChild(display);
-        container.appendChild(sliderContainer);
-    }
-
-    // Add a text input control
-    function addTextControl(container, key, setting) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = setting.value || '';
-        input.placeholder = setting.placeholder || '';
-
-        // Add change listener
-        input.addEventListener('change', function() {
-            pendingChanges[key] = this.value;
-            updateChangesCount();
-        });
-
-        container.appendChild(input);
-    }
-
-    // Add a color picker control
-    function addColorControl(container, key, value) {
-        if (!value) {
-            value = { r: 255, g: 255, b: 255, a: 255 };
+            
+            // Add input event for live updates
+            input.addEventListener('input', function() {
+                updateDisplayValue();
+                const numValue = parseFloat(this.value);
+                pendingChanges[key] = numValue;
+                updateChangesCount();
+            });
+            
+            sliderContainer.appendChild(input);
+            sliderContainer.appendChild(display);
+            container.appendChild(sliderContainer);
         }
-
-        const colorContainer = document.createElement('div');
-        colorContainer.className = 'color-container';
-
-        // Color input
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.value = rgbToHex(value.r, value.g, value.b);
-
-        // Alpha slider
-        const alphaSlider = document.createElement('input');
-        alphaSlider.type = 'range';
-        alphaSlider.min = 0;
-        alphaSlider.max = 255;
-        alphaSlider.value = value.a;
-
-        // Color preview
-        const preview = document.createElement('div');
-        preview.className = 'color-preview';
-        preview.style.backgroundColor = `rgba(${value.r}, ${value.g}, ${value.b}, ${value.a / 255})`;
-
-        // Update handler
-        function updateColor() {
-            const rgb = hexToRgb(colorInput.value);
-            const alpha = parseInt(alphaSlider.value);
-
-            preview.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha / 255})`;
-
-            pendingChanges[key] = {
-                r: rgb.r,
-                g: rgb.g,
-                b: rgb.b,
-                a: alpha
+        
+        // Add a text input control
+        function addTextControl(container, key, setting) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = setting.value || '';
+            input.placeholder = setting.placeholder || '';
+            
+            // Add change listener
+            input.addEventListener('change', function() {
+                pendingChanges[key] = this.value;
+                updateChangesCount();
+            });
+            
+            container.appendChild(input);
+        }
+        
+        // Add a color picker control
+        function addColorControl(container, key, value) {
+            if (!value) {
+                value = { r: 255, g: 255, b: 255, a: 255 };
+            }
+            
+            const colorContainer = document.createElement('div');
+            colorContainer.className = 'color-container';
+            
+            // Color input
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.value = rgbToHex(value.r, value.g, value.b);
+            
+            // Alpha slider
+            const alphaSlider = document.createElement('input');
+            alphaSlider.type = 'range';
+            alphaSlider.min = 0;
+            alphaSlider.max = 255;
+            alphaSlider.value = value.a;
+            
+            // Color preview
+            const preview = document.createElement('div');
+            preview.className = 'color-preview';
+            preview.style.backgroundColor = `rgba(${value.r}, ${value.g}, ${value.b}, ${value.a / 255})`;
+            
+            // Update handler
+            function updateColor() {
+                const rgb = hexToRgb(colorInput.value);
+                const alpha = parseInt(alphaSlider.value);
+                
+                preview.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha / 255})`;
+                
+                pendingChanges[key] = {
+                    r: rgb.r,
+                    g: rgb.g,
+                    b: rgb.b,
+                    a: alpha
+                };
+                
+                updateChangesCount();
+            }
+            
+            // Add event listeners
+            colorInput.addEventListener('input', updateColor);
+            alphaSlider.addEventListener('input', updateColor);
+            
+            colorContainer.appendChild(colorInput);
+            colorContainer.appendChild(alphaSlider);
+            colorContainer.appendChild(preview);
+            container.appendChild(colorContainer);
+        }
+        
+        // Add a selector control
+        function addSelectorControl(container, key, setting) {
+            const select = document.createElement('select');
+            
+            // Add options
+            const options = setting.options || [];
+            options.forEach((option, index) => {
+                const optionElement = document.createElement('option');
+                optionElement.value = index;
+                optionElement.textContent = option;
+                optionElement.selected = index === setting.value;
+                select.appendChild(optionElement);
+            });
+            
+            // Add change listener
+            select.addEventListener('change', function() {
+                pendingChanges[key] = parseInt(this.value);
+                updateChangesCount();
+            });
+            
+            container.appendChild(select);
+        }
+        
+        // Find config key for a module name
+        function findConfigKeyForModule(moduleName) {
+            // Common patterns
+            const patterns = [
+                moduleName.toLowerCase() + 'Enabled',
+                moduleName.replace(/\s+/g, '') + 'Enabled',
+                moduleName.replace(/\s+/g, '').toLowerCase() + 'Enabled',
+                moduleName.replace(/\s+/g, '') + 'Toggled',
+                moduleName.toLowerCase().replace(/\s+/g, ''),
+            ];
+            
+            // Check each pattern
+            for (const pattern of patterns) {
+                if (pattern in configData) {
+                    return pattern;
+                }
+            }
+            
+            // Special cases
+            const specialCases = {
+                'Target HUD': 'targetHudToggled',
+                'ESP': 'espEnabled',
+                'Storage ESP': 'storageEspEnabled',
+                'Sprint': 'sprint',
+                'No Jump Delay': 'noJumpDelay',
+                'Full Bright': 'fullBright',
+                'Mace Dive': 'maceDiveEnabled',
+                'Mace D-Tap': 'maceDTap',
+                'Hitbox': 'HitboxEnabled',
+                'Weapon Swapper': 'weaponSwapper',
+                'Aim Assist': 'aimAssistEnabled',
+                'Chams': 'chamsEnabled'
             };
-
-            updateChangesCount();
+            
+            return specialCases[moduleName] || null;
         }
-
-        // Add event listeners
-        colorInput.addEventListener('input', updateColor);
-        alphaSlider.addEventListener('input', updateColor);
-
-        colorContainer.appendChild(colorInput);
-        colorContainer.appendChild(alphaSlider);
-        colorContainer.appendChild(preview);
-        container.appendChild(colorContainer);
-    }
-
-    // Add a selector control
-    function addSelectorControl(container, key, setting) {
-        const select = document.createElement('select');
-
-        // Add options
-        const options = setting.options || [];
-        options.forEach((option, index) => {
-            const optionElement = document.createElement('option');
-            optionElement.value = index;
-            optionElement.textContent = option;
-            optionElement.selected = index === setting.value;
-            select.appendChild(optionElement);
-        });
-
-        // Add change listener
-        select.addEventListener('change', function() {
-            pendingChanges[key] = parseInt(this.value);
-            updateChangesCount();
-        });
-
-        container.appendChild(select);
-    }
-
-    // Find config key for a module name
-    function findConfigKeyForModule(moduleName) {
-        console.log('Finding config key for:', moduleName);
-
-        // Common patterns
-        const patterns = [
-            moduleName.toLowerCase() + 'Enabled',
-            moduleName.replace(/\s+/g, '') + 'Enabled',
-            moduleName.replace(/\s+/g, '').toLowerCase() + 'Enabled',
-            moduleName.replace(/\s+/g, '') + 'Toggled',
-            moduleName.toLowerCase().replace(/\s+/g, ''),
-        ];
-
-        // Check each pattern
-        for (const pattern of patterns) {
-            if (pattern in configData) {
-                console.log('Found pattern:', pattern);
-                return pattern;
+        
+        // Set up event listeners
+        function setupEventListeners() {
+            // Save changes buttons (both top and bottom)
+            document.getElementById('save-changes').addEventListener('click', saveChanges);
+            document.getElementById('save-changes-bottom').addEventListener('click', saveChanges);
+            
+            // Reset config button
+            document.getElementById('reset-config').addEventListener('click', resetConfig);
+        }
+        
+        // Update the changes counter
+        function updateChangesCount() {
+            const count = Object.keys(pendingChanges).length;
+            document.getElementById('changes-count').textContent = 
+                count === 1 ? '1 change' : `${count} changes`;
+        }
+        
+        // Save pending changes
+        async function saveChanges() {
+            const count = Object.keys(pendingChanges).length;
+            
+            if (count === 0) {
+                showStatus('No changes to save', 'info');
+                return;
             }
-        }
-
-        // Special cases
-        const specialCases = {
-            'Target HUD': 'targetHudToggled',
-            'ESP': 'espEnabled',
-            'Storage ESP': 'storageEspEnabled',
-            'Sprint': 'sprint',
-            'No Jump Delay': 'noJumpDelay',
-            'Full Bright': 'fullBright',
-            'Mace Dive': 'maceDiveEnabled',
-            'Mace D-Tap': 'maceDTap',
-            'Hitbox': 'HitboxEnabled',
-            'Weapon Swapper': 'weaponSwapper',
-            'Aim Assist': 'aimAssistEnabled',
-            'Chams': 'chamsEnabled'
-        };
-
-        const foundKey = specialCases[moduleName];
-        console.log('Special case result:', foundKey);
-        return foundKey || null;
-    }
-
-    // Set up event listeners
-    function setupEventListeners() {
-        // Save changes buttons (both top and bottom)
-        document.getElementById('save-changes').addEventListener('click', saveChanges);
-        document.getElementById('save-changes-bottom').addEventListener('click', saveChanges);
-
-        // Reset config button
-        document.getElementById('reset-config').addEventListener('click', resetConfig);
-    }
-
-    // Update the changes counter
-    function updateChangesCount() {
-        const count = Object.keys(pendingChanges).length;
-        document.getElementById('changes-count').textContent =
-            count === 1 ? '1 change' : `${count} changes`;
-    }
-
-    // Save pending changes
-    async function saveChanges() {
-        const count = Object.keys(pendingChanges).length;
-
-        if (count === 0) {
-            showStatus('No changes to save', 'info');
-            return;
-        }
-
-        showStatus(`Saving ${count} change${count === 1 ? '' : 's'}...`, 'info');
-
-        try {
-            const response = await fetch('/api/config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(pendingChanges)
-            });
-
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status} ${response.statusText}`);
-            }
-
-            const result = await response.json();
-
-            if (result.status === 'success') {
-                // Update local config
-                for (const key in pendingChanges) {
-                    configData[key] = pendingChanges[key];
+            
+            showStatus(`Saving ${count} change${count === 1 ? '' : 's'}...`, 'info');
+            
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(pendingChanges)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
                 }
-
-                // Clear pending changes
-                pendingChanges = {};
-                updateChangesCount();
-
-                showStatus(`${count} change${count === 1 ? '' : 's'} saved successfully!`, 'success');
-
-                // Reload modules to refresh the UI
-                await loadModules();
-            } else {
-                throw new Error(result.message || 'Unknown error');
-            }
-        } catch (error) {
-            showStatus(`Error saving changes: ${error.message}`, 'error');
-        }
-    }
-
-    // Reset configuration
-    async function resetConfig() {
-        if (!confirm('Are you sure you want to reset ALL settings to their default values? This cannot be undone.')) {
-            return;
-        }
-
-        showStatus('Resetting all settings to defaults...', 'info');
-
-        try {
-            const response = await fetch('/api/config/reset', {
-                method: 'POST'
-            });
-
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status} ${response.statusText}`);
-            }
-
-            const result = await response.json();
-
-            if (result.status === 'success') {
-                showStatus('All settings have been reset to defaults. Reloading...', 'success');
-
-                // Clear pending changes
-                pendingChanges = {};
-                updateChangesCount();
-
-                // Reload everything after a brief delay
-                setTimeout(async () => {
-                    await loadConfig();
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // Update local config
+                    for (const key in pendingChanges) {
+                        configData[key] = pendingChanges[key];
+                    }
+                    
+                    // Clear pending changes
+                    pendingChanges = {};
+                    updateChangesCount();
+                    
+                    showStatus(`${count} change${count === 1 ? '' : 's'} saved successfully!`, 'success');
+                    
+                    // Reload modules to refresh the UI
                     await loadModules();
-                }, 1500);
-            } else {
-                throw new Error(result.message || 'Unknown error');
-            }
-        } catch (error) {
-            showStatus(`Error resetting settings: ${error.message}`, 'error');
-        }
-    }
-
-    // Show status message
-    function showStatus(message, type) {
-        const statusElement = document.getElementById('status-message');
-        statusElement.textContent = message;
-        statusElement.className = `status ${type}`;
-        statusElement.style.display = 'block';
-
-        // Auto-hide success messages
-        if (type === 'success') {
-            setTimeout(() => {
-                if (statusElement.textContent === message) {
-                    statusElement.style.display = 'none';
+                } else {
+                    throw new Error(result.message || 'Unknown error');
                 }
-            }, 3000);
+            } catch (error) {
+                showStatus(`Error saving changes: ${error.message}`, 'error');
+            }
         }
-    }
-
-    // RGB to HEX conversion
-    function rgbToHex(r, g, b) {
-        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-    }
-
-    // HEX to RGB conversion
-    function hexToRgb(hex) {
-        // Remove # if present
-        hex = hex.replace(/^#/, '');
-
-        // Parse hex string
-        const bigint = parseInt(hex, 16);
-        const r = (bigint >> 16) & 255;
-        const g = (bigint >> 8) & 255;
-        const b = bigint & 255;
-
-        return { r, g, b };
-    }
-</script>
+        
+        // Reset configuration
+        async function resetConfig() {
+            if (!confirm('Are you sure you want to reset ALL settings to their default values? This cannot be undone.')) {
+                return;
+            }
+            
+            showStatus('Resetting all settings to defaults...', 'info');
+            
+            try {
+                const response = await fetch('/api/config/reset', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showStatus('All settings have been reset to defaults. Reloading...', 'success');
+                    
+                    // Clear pending changes
+                    pendingChanges = {};
+                    updateChangesCount();
+                    
+                    // Reload everything after a brief delay
+                    setTimeout(async () => {
+                        await loadConfig();
+                        await loadModules();
+                    }, 1500);
+                } else {
+                    throw new Error(result.message || 'Unknown error');
+                }
+            } catch (error) {
+                showStatus(`Error resetting settings: ${error.message}`, 'error');
+            }
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('status-message');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    if (statusElement.textContent === message) {
+                        statusElement.style.display = 'none';
+                    }
+                }, 3000);
+            }
+        }
+        
+        // RGB to HEX conversion
+        function rgbToHex(r, g, b) {
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        // HEX to RGB conversion
+        function hexToRgb(hex) {
+            // Remove # if present
+            hex = hex.replace(/^#/, '');
+            
+            // Parse hex string
+            const bigint = parseInt(hex, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            
+            return { r, g, b };
+        }
+    </script>
 </body>
 </html>
