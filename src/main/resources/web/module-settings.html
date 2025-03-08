@@ -103,7 +103,7 @@
         .module-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
+            gap: 20px;
             padding: 15px;
             background-color: var(--darker-bg);
             border-radius: 0 0 var(--border-radius) var(--border-radius);
@@ -133,6 +133,18 @@
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+
+        .module-controls.has-settings .settings-toggle {
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .module-controls.no-settings .settings-toggle {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
         }
         
         .settings-toggle {
@@ -309,7 +321,7 @@
         }
         
         .module-card.expanded .module-settings {
-            display: block;
+            display: block !important;
         }
         
         .action-buttons {
@@ -327,6 +339,20 @@
         
         .action-buttons button {
             padding: 10px 20px;
+        }
+        
+        /* Fix for settings button visibility */
+        .module-controls.has-settings .settings-toggle {
+            display: inline-block !important;
+        }
+        
+        .module-controls.no-settings .settings-toggle {
+            display: none !important;
+        }
+        
+        /* Fix for module settings display */
+        .module-card .module-settings {
+            display: none !important;
         }
     </style>
 </head>
@@ -361,25 +387,90 @@
         let configData = null;
         let metadataData = null;
         let modulesData = null;
+        let dependencyMap = {};
         let pendingChanges = {};
         
+        // Complete module to settings mapping
+        const moduleSettings = {
+            // Combat modules
+            'aimAssistEnabled': [
+                'aimAssistMode', 'stopOnEdge', 'aimAssistVisibleTime', 'aimAssistSmoothing',
+                'aimAssistFOV', 'aimAssistRange', 'aimAssistRandom', 'aimAssistHitbox',
+                'aimAssistWeaponOnly', 'aimAssistStickyTarget', 'aimAssistTargetPlayers',
+                'aimAssistTargetCrystals', 'aimAssistTargetEntities'
+            ],
+            
+            'backtrackEnabled': [
+                'backtrackMinDistance', 'backtrackMaxDistance', 'backtrackMaxDelay',
+                'backtrackMaxHurtTime', 'backtrackCooldown', 'backtrackDisableOnHit',
+                'backtrackWeaponOnly'
+            ],
+            
+            'HitboxEnabled': ['hitboxExpand', 'hitboxTargets'],
+            
+            'weaponSwapper': ['firstWeapon', 'secondWeapon', 'weaponSwapBack'],
+            
+            'maceDiveEnabled': [
+                'maceDiveKey', 'groundDetectionHeight', 'attackMode', 'autoEquipElytra',
+                'autoSwapChestplate', 'boostStrength', 'maxHeight', 'SwapPacket'
+            ],
+            
+            'maceDTap': ['axePriority', 'maceFirstWeapon', 'maceSecondWeapon', 'switchOnly'],
+            
+            // Render modules
+            'targetHudToggled': ['animations', 'offsetX', 'offsetY', 'showHead', 'background'],
+            
+            'espEnabled': ['espRenderPlayers', 'espPlayerColor'],
+            
+            'chamsEnabled': [], // No additional settings
+            
+            'storageEspEnabled': [
+                'storageEspOpacity', 'storageEspTracers', 
+                'chestEspEnabled', 'enderChestEspEnabled', 'trappedChestEspEnabled',
+                'hopperEspEnabled', 'furnaceEspEnabled', 'shulkerEspEnabled',
+                'chestEspColor', 'enderChestEspColor', 'trappedChestEspColor',
+                'hopperEspColor', 'furnaceEspColor', 'shulkerEspColor'
+            ],
+            
+            // Utility modules
+            'sprint': [], // No additional settings
+            
+            'noJumpDelay': [], // No additional settings
+            
+            'fullBright': [], // No additional settings
+            
+            // Developer settings
+            'developerMode': ['debugMessages']
+        };
+        
         // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', initializePage);
+        
+        // Initialize the page
+        function initializePage() {
             try {
-                await loadConfig();
-                await loadModules();
-                setupEventListeners();
-                
-                document.getElementById('status-message').textContent = 'Configuration loaded successfully';
-                document.getElementById('status-message').className = 'status success';
-                setTimeout(() => {
-                    document.getElementById('status-message').style.display = 'none';
-                }, 3000);
+                // Load config and modules
+                loadConfig().then(() => {
+                    return loadModules();
+                }).then(() => {
+                    buildDependencyMap();
+                    setupEventListeners();
+                    
+                    // Update status message
+                    document.getElementById('status-message').textContent = 'Configuration loaded successfully';
+                    document.getElementById('status-message').className = 'status success';
+                    setTimeout(() => {
+                        document.getElementById('status-message').style.display = 'none';
+                    }, 3000);
+                }).catch(error => {
+                    document.getElementById('status-message').textContent = `Error: ${error.message}`;
+                    document.getElementById('status-message').className = 'status error';
+                });
             } catch (error) {
                 document.getElementById('status-message').textContent = `Error: ${error.message}`;
                 document.getElementById('status-message').className = 'status error';
             }
-        });
+        }
         
         // Load configuration
         async function loadConfig() {
@@ -421,13 +512,56 @@
             }
         }
         
+        // Build a map of which settings depend on which modules
+        function buildDependencyMap() {
+            // Start with an empty map
+            dependencyMap = {};
+            
+            // Add known module settings
+            for (const moduleKey in moduleSettings) {
+                dependencyMap[moduleKey] = [...moduleSettings[moduleKey]];
+            }
+            
+            // Look at metadata to find common patterns
+            for (const key in metadataData) {
+                // Skip if no metadata
+                if (!metadataData[key]) continue;
+                
+                // Handle common module patterns
+                if (key.endsWith('Enabled') || key.endsWith('Toggled')) {
+                    // This is likely a module toggle
+                    if (!dependencyMap[key]) {
+                        dependencyMap[key] = [];
+                    }
+                }
+            }
+            
+            // Look for settings that might depend on modules
+            for (const key in metadataData) {
+                if (!metadataData[key]) continue;
+                
+                // Try to find a potential parent module
+                for (const moduleKey in dependencyMap) {
+                    // Skip self-references
+                    if (moduleKey === key) continue;
+                    
+                    // Common patterns for dependencies
+                    const baseName = moduleKey.replace(/Enabled$|Toggled$/, '');
+                    
+                    if (key.startsWith(baseName) && key !== moduleKey && !dependencyMap[moduleKey].includes(key)) {
+                        // This setting likely belongs to this module
+                        dependencyMap[moduleKey].push(key);
+                    }
+                }
+            }
+            
+            console.log('Dependency map built:', dependencyMap);
+        }
+        
         // Render modules overview
         function renderModules() {
             const container = document.getElementById('modules-container');
             container.innerHTML = '';
-            
-            // Organize metadata by subcategory for easier access
-            const metadataBySubcategory = organizeMetadataBySubcategory();
             
             // Create sections for each category in modulesData
             for (const category in modulesData) {
@@ -446,52 +580,10 @@
                     const enabled = modulesData[category][moduleName];
                     const configKey = findConfigKeyForModule(moduleName);
                     
-                    // Identify subcategories related to this module
-                    let relatedSubcategories = [];
-                    if (configKey && metadataBySubcategory[category]) {
-                        // Find subcategories that might be related to this module
-                        const moduleBaseName = moduleName.replace(/\s+/g, '').toLowerCase();
-                        
-                        for (const subcategory in metadataBySubcategory[category]) {
-                            // Check if this subcategory seems to be related to the module
-                            if (subcategory.toLowerCase().includes(moduleBaseName) || 
-                                moduleBaseName.includes(subcategory.toLowerCase())) {
-                                relatedSubcategories.push(subcategory);
-                            }
-                        }
-                        
-                        // If no match by name, check if there's a direct module property
-                        if (relatedSubcategories.length === 0) {
-                            for (const subcategory in metadataBySubcategory[category]) {
-                                for (const key in metadataBySubcategory[category][subcategory]) {
-                                    if (key === configKey) {
-                                        relatedSubcategories.push(subcategory);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Handle special cases where we know the mappings
-                        if (relatedSubcategories.length === 0) {
-                            const specialMappings = {
-                                'Target HUD': ['TargetHUD'],
-                                'Storage ESP': ['Storage ESP', 'Storage ESP Types'],
-                                'Hitbox': ['Hitbox'],
-                                'Mace Dive': ['Mace Dive'],
-                                'Mace D-Tap': ['Mace D-Tap'],
-                                'Aim Assist': ['Aim Assist', 'Aim Assist Targets'],
-                                'Weapon Swapper': ['Weapon Swapper']
-                            };
-                            
-                            if (specialMappings[moduleName]) {
-                                relatedSubcategories = specialMappings[moduleName];
-                            }
-                        }
+                    if (configKey) {
+                        const moduleCard = createModuleCard(moduleName, enabled, configKey);
+                        moduleGrid.appendChild(moduleCard);
                     }
-                    
-                    const moduleCard = createModuleCard(moduleName, enabled, configKey, category, relatedSubcategories);
-                    moduleGrid.appendChild(moduleCard);
                 }
                 
                 categorySection.appendChild(categoryHeader);
@@ -500,39 +592,52 @@
             }
         }
         
-        // Organize metadata by category and subcategory
-        function organizeMetadataBySubcategory() {
-            const organized = {};
+        // Find config key for a module name
+        function findConfigKeyForModule(moduleName) {
+            // Common patterns
+            const patterns = [
+                moduleName.toLowerCase() + 'Enabled',
+                moduleName.replace(/\s+/g, '') + 'Enabled',
+                moduleName.replace(/\s+/g, '').toLowerCase() + 'Enabled',
+                moduleName.replace(/\s+/g, '') + 'Toggled',
+                moduleName.toLowerCase().replace(/\s+/g, ''),
+            ];
             
-            for (const key in metadataData) {
-                const meta = metadataData[key];
-                if (!meta) continue;
-                
-                const category = meta.category;
-                const subcategory = meta.subcategory || 'General';
-                
-                if (!organized[category]) {
-                    organized[category] = {};
+            // Check each pattern
+            for (const pattern of patterns) {
+                if (pattern in configData) {
+                    return pattern;
                 }
-                
-                if (!organized[category][subcategory]) {
-                    organized[category][subcategory] = {};
-                }
-                
-                organized[category][subcategory][key] = {
-                    ...meta,
-                    key,
-                    value: configData[key]
-                };
             }
             
-            return organized;
+            // Special cases
+            const specialCases = {
+                'Target HUD': 'targetHudToggled',
+                'ESP': 'espEnabled',
+                'Storage ESP': 'storageEspEnabled',
+                'Sprint': 'sprint',
+                'No Jump Delay': 'noJumpDelay',
+                'Full Bright': 'fullBright',
+                'Mace Dive': 'maceDiveEnabled',
+                'Mace D-Tap': 'maceDTap',
+                'Hitbox': 'HitboxEnabled',
+                'Weapon Swapper': 'weaponSwapper',
+                'Aim Assist': 'aimAssistEnabled',
+                'Chams': 'chamsEnabled'
+            };
+            
+            return specialCases[moduleName] || null;
         }
         
         // Create a module card
-        function createModuleCard(name, enabled, configKey, category, relatedSubcategories) {
+        function createModuleCard(name, enabled, configKey) {
             const card = document.createElement('div');
             card.className = 'module-card';
+            card.dataset.configKey = configKey;
+            
+            // Improve detection of module settings
+            const hasSettings = dependencyMap[configKey] && 
+                dependencyMap[configKey].length > 0;
             
             // Create header with name and toggle
             const header = document.createElement('div');
@@ -543,16 +648,26 @@
             nameElement.textContent = name;
             
             const controls = document.createElement('div');
-            controls.className = 'module-controls';
+            controls.className = `module-controls ${hasSettings ? 'has-settings' : 'no-settings'}`;
             
             // Add settings button if we have related settings
-            if (relatedSubcategories && relatedSubcategories.length > 0) {
+            if (hasSettings) {
                 const settingsButton = document.createElement('button');
                 settingsButton.className = 'settings-toggle';
                 settingsButton.innerHTML = '<i class="fas fa-cog"></i>';
                 settingsButton.title = 'Module Settings';
-                settingsButton.addEventListener('click', () => toggleSettings(card));
+                settingsButton.dataset.moduleKey = configKey;
+                
                 controls.appendChild(settingsButton);
+                
+                console.log(`Module ${name} (${configKey}) has settings:`, dependencyMap[configKey]);
+                
+                // Additional debugging for settings detection
+                if (dependencyMap[configKey]) {
+                    dependencyMap[configKey].forEach(setting => {
+                        console.log(`- Setting: ${setting}, Metadata:`, metadataData[setting]);
+                    });
+                }
             }
             
             // Add toggle switch
@@ -563,15 +678,11 @@
             checkboxInput.type = 'checkbox';
             checkboxInput.checked = enabled;
             
-            if (configKey) {
-                card.dataset.configKey = configKey;
-                
-                // Add change listener
-                checkboxInput.addEventListener('change', function() {
-                    pendingChanges[configKey] = this.checked;
-                    updateChangesCount();
-                });
-            }
+            // Add change listener
+            checkboxInput.addEventListener('change', function() {
+                pendingChanges[configKey] = this.checked;
+                updateChangesCount();
+            });
             
             const slider = document.createElement('span');
             slider.className = 'slider';
@@ -584,47 +695,53 @@
             header.appendChild(controls);
             card.appendChild(header);
             
-            // Create settings panel (initially hidden)
-            if (relatedSubcategories && relatedSubcategories.length > 0) {
+            // Create settings panel if this module has settings
+            if (hasSettings) {
                 const settingsPanel = document.createElement('div');
                 settingsPanel.className = 'module-settings';
                 
-                const organizedMetadata = organizeMetadataBySubcategory();
+                // Add settings for this module
+                const relatedSettings = dependencyMap[configKey] || [];
+                let hasVisibleSettings = false;
                 
-                // Add settings from all related subcategories
-                relatedSubcategories.forEach(subcategory => {
-                    if (organizedMetadata[category] && organizedMetadata[category][subcategory]) {
-                        // Skip the main toggle which is already in the header
-                        const skipKeys = [configKey];
+                relatedSettings.forEach(settingKey => {
+                    if (!settingKey) return;
+                    
+                    const settingData = metadataData[settingKey];
+                    if (settingData) {
+                        // Clone the setting data to avoid modifying the original
+                        const settingDataCopy = JSON.parse(JSON.stringify(settingData));
+                        settingDataCopy.key = settingKey;
+                        settingDataCopy.value = configData[settingKey];
                         
-                        // Process each setting in this subcategory
-                        for (const key in organizedMetadata[category][subcategory]) {
-                            if (skipKeys.includes(key)) continue;
-                            
-                            const settingData = organizedMetadata[category][subcategory][key];
-                            const settingElement = createSettingElement(key, settingData);
-                            
-                            if (settingElement) {
-                                settingsPanel.appendChild(settingElement);
-                            }
+                        const settingElement = createSettingElement(settingKey, settingDataCopy);
+                        if (settingElement) {
+                            settingsPanel.appendChild(settingElement);
+                            hasVisibleSettings = true;
                         }
                     }
                 });
                 
-                card.appendChild(settingsPanel);
+                // Only add the settings panel if there are actual settings to show
+                if (hasVisibleSettings) {
+                    card.appendChild(settingsPanel);
+                } else {
+                    // If no settings were found, update controls to hide the settings button
+                    controls.classList.remove('has-settings');
+                    controls.classList.add('no-settings');
+                    const settingsButton = controls.querySelector('.settings-toggle');
+                    if (settingsButton) {
+                        controls.removeChild(settingsButton);
+                    }
+                }
             }
             
             return card;
         }
         
-        // Toggle settings panel visibility
-        function toggleSettings(card) {
-            card.classList.toggle('expanded');
-        }
-        
         // Create a setting control element
         function createSettingElement(key, settingData) {
-            if (!settingData) return null;
+            if (!settingData || !settingData.type) return null;
             
             const settingItem = document.createElement('div');
             settingItem.className = 'setting-item';
@@ -644,6 +761,7 @@
             controlElement.className = 'setting-control';
             
             // Choose control type based on metadata
+            let controlCreated = true;
             switch (settingData.type) {
                 case 'switch':
                     addSwitchControl(controlElement, key, settingData.value);
@@ -666,16 +784,22 @@
                     break;
                     
                 default:
-                    // For unknown types, just show the value
-                    controlElement.textContent = settingData.value;
+                    // For unknown types, just show the value as text
+                    controlElement.textContent = settingData.value !== undefined ? String(settingData.value) : 'Unknown value';
+                    controlCreated = !!settingData.value; // Only consider it created if there's a value
             }
             
-            // Add elements to the setting item
-            settingItem.appendChild(nameElement);
-            settingItem.appendChild(descElement);
-            settingItem.appendChild(controlElement);
+            // Only create the setting element if a control was successfully created
+            if (controlCreated) {
+                // Add elements to the setting item
+                settingItem.appendChild(nameElement);
+                settingItem.appendChild(descElement);
+                settingItem.appendChild(controlElement);
+                
+                return settingItem;
+            }
             
-            return settingItem;
+            return null;
         }
         
         // Add a switch control
@@ -832,43 +956,6 @@
             container.appendChild(select);
         }
         
-        // Find config key for a module name
-        function findConfigKeyForModule(moduleName) {
-            // Common patterns
-            const patterns = [
-                moduleName.toLowerCase() + 'Enabled',
-                moduleName.replace(/\s+/g, '') + 'Enabled',
-                moduleName.replace(/\s+/g, '').toLowerCase() + 'Enabled',
-                moduleName.replace(/\s+/g, '') + 'Toggled',
-                moduleName.toLowerCase().replace(/\s+/g, ''),
-            ];
-            
-            // Check each pattern
-            for (const pattern of patterns) {
-                if (pattern in configData) {
-                    return pattern;
-                }
-            }
-            
-            // Special cases
-            const specialCases = {
-                'Target HUD': 'targetHudToggled',
-                'ESP': 'espEnabled',
-                'Storage ESP': 'storageEspEnabled',
-                'Sprint': 'sprint',
-                'No Jump Delay': 'noJumpDelay',
-                'Full Bright': 'fullBright',
-                'Mace Dive': 'maceDiveEnabled',
-                'Mace D-Tap': 'maceDTap',
-                'Hitbox': 'HitboxEnabled',
-                'Weapon Swapper': 'weaponSwapper',
-                'Aim Assist': 'aimAssistEnabled',
-                'Chams': 'chamsEnabled'
-            };
-            
-            return specialCases[moduleName] || null;
-        }
-        
         // Set up event listeners
         function setupEventListeners() {
             // Save changes buttons (both top and bottom)
@@ -877,6 +964,34 @@
             
             // Reset config button
             document.getElementById('reset-config').addEventListener('click', resetConfig);
+            
+            // Add global event listener for settings toggle buttons
+            document.addEventListener('click', function(e) {
+                // Check if the clicked element is a settings toggle button or its child
+                if (e.target.matches('.settings-toggle') || e.target.matches('.settings-toggle *')) {
+                    // Find the closest module card
+                    const card = e.target.closest('.module-card');
+                    if (card) {
+                        // Close all other expanded cards
+                        document.querySelectorAll('.module-card.expanded').forEach(expandedCard => {
+                            if (expandedCard !== card) {
+                                expandedCard.classList.remove('expanded');
+                            }
+                        });
+                        
+                        // Toggle this card
+                        card.classList.toggle('expanded');
+                        
+                        // Log for debugging
+                        console.log('Toggled settings for:', card.dataset.configKey);
+                        console.log('Is expanded:', card.classList.contains('expanded'));
+                        
+                        // Prevent default and stop propagation
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }
+            }, true); // Use capture phase for better reliability
         }
         
         // Update the changes counter
