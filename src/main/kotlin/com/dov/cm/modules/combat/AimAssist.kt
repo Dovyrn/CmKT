@@ -334,6 +334,9 @@ object AimAssist {
      */
 
 
+    /**
+     * Smoothly rotate towards the target rotation
+     */
     private fun smoothRotate(targetRot: Rotation, smoothing: Float) {
         val player = mc.player ?: return
 
@@ -343,18 +346,26 @@ object AimAssist {
                 val currentPitch = player.pitch
 
                 // Calculate maximum rotation change per step
-                val maxYawChange = (1.0f * (1f - smoothing / 1.1f)) / 2.5f
+                val maxYawChange = (0.75f * (1f - smoothing / 1.1f)) / 2.5f
                 val maxPitchChange = (0.3f * (1f - smoothing / 1.1f)) / 2.5f
 
                 // Calculate needed rotation changes
                 val yawDiff = wrap(targetRot.yaw - currentYaw)
                 val pitchDiff = wrap(targetRot.pitch - currentPitch)
 
+                // Add vertical precision check
+                // Only rotate horizontally if vertical aim is very close to target
+                val shouldRotateHorizontally = Math.abs(pitchDiff) < 5f
+
                 // Limit rotation change
-                val adjustedYawChange = when {
-                    Math.abs(yawDiff) <= maxYawChange -> yawDiff
-                    yawDiff > 0 -> maxYawChange
-                    else -> -maxYawChange
+                val adjustedYawChange = if (shouldRotateHorizontally) {
+                    when {
+                        Math.abs(yawDiff) <= maxYawChange -> yawDiff
+                        yawDiff > 0 -> maxYawChange
+                        else -> -maxYawChange
+                    }
+                } else {
+                    0f
                 }
 
                 val adjustedPitchChange = when {

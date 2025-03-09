@@ -4,72 +4,94 @@ import com.dov.cm.config.Config
 import com.dov.cm.modules.UChat
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.network.AbstractClientPlayerEntity
 import net.minecraft.entity.Entity
 import net.minecraft.entity.player.PlayerEntity
-import org.lwjgl.opengl.GL11
-import java.util.HashSet
-
-/**
- * Chams module - Simple implementation that shows players through walls
- */
-object Chams {
+import net.minecraft.entity.effect.StatusEffectInstance
+import net.minecraft.entity.effect.StatusEffects
+object GlowESP {
     private val mc: MinecraftClient = MinecraftClient.getInstance()
-    private val processedEntities = HashSet<Entity>()
 
+
+
+    /**
+     * Initialize the GlowESP module
+     */
     fun init() {
-        // Register tick event to reset the processed entities list
+        // Register client tick event to handle glow effect
         ClientTickEvents.END_CLIENT_TICK.register { _ ->
-            if (!Config.chamsEnabled) {
-                resetRendering()
+            if (Config.chamsEnabled) {
+                try {
+                    updateGlowEffect()
+                } catch (e: Exception) {
+                    // Prevent crashes
+                    e.printStackTrace()
+                }
             }
         }
 
-        // Log initialization
-        UChat.mChat("Chams Module initialized")
+        UChat.mChat("GlowESP module initialized")
     }
 
-    private fun resetRendering() {
-        // Reset any GL state that might have been changed
-        GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL)
-        GL11.glEnable(GL11.GL_DEPTH_TEST)
-        processedEntities.clear()
-    }
+    /**
+     * Update glow effect for players
+     */
+    private fun updateGlowEffect() {
+        val player = mc.player ?: return
+        val world = mc.world ?: return
 
-    // Called before entity rendering
-    fun preRender(entity: Entity) {
-        // Skip if not enabled
-        if (!Config.chamsEnabled) return
+        // Check weapon-only condition if enabled
+        val shouldApplyGlow = true
 
-        // Only apply to players
-        if (entity is PlayerEntity && entity != mc.player) {
-            // Mark this entity as being processed
-            processedEntities.add(entity)
-
-            // Apply the rendering changes for the "through walls" effect
-            GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL)
-            GL11.glPolygonOffset(1.0f, -2500000.0f)
-
-            // Disable depth test to see through walls
-            GL11.glDisable(GL11.GL_DEPTH_TEST)
+        // Iterate through all entities in the world
+        world.entities.forEach { entity ->
+            if (shouldApplyGlow && isValidTarget(entity)) {
+                // Apply glow effect client-side
+                entity.isGlowing = true
+            } else {
+                // Remove glow effect for non-targets
+                entity.isGlowing = false
+            }
         }
     }
 
-    // Called after entity rendering
-    fun postRender(entity: Entity) {
-        // Skip if not enabled
-        if (!Config.chamsEnabled) return
+    /**
+     * Check if the player is holding a weapon
+     */
 
-        // Check if this entity was processed in preRender
-        if (processedEntities.contains(entity)) {
-            // Remove from processed list
-            processedEntities.remove(entity)
 
-            // Reset the rendering changes
-            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL)
-            GL11.glPolygonOffset(1.0f, 2500000.0f)
-
-            // Re-enable depth test
-            GL11.glEnable(GL11.GL_DEPTH_TEST)
+    /**
+     * Check if an entity is a valid glow target
+     */
+    private fun isValidTarget(entity: Entity): Boolean {
+        // Only glow player entities
+        if (entity is PlayerEntity) {
+            return true
         }
+
+        // Don't glow the local player
+        if (entity == mc.player) {
+            return false
+        }
+        return true
+    }
+
+    /**
+     * Reset glow effect when module is disabled
+     */
+    fun resetGlowEffect() {
+        val world = mc.world ?: return
+
+        // Remove glow from all entities
+        world.entities.forEach { entity ->
+            entity.isGlowing = false
+        }
+    }
+
+    /**
+     * Cleanup method to ensure glow is removed when module is unloaded
+     */
+    fun onDisable() {
+        resetGlowEffect()
     }
 }

@@ -2,6 +2,10 @@ package com.dov.cm.modules.combat
 
 import com.dov.cm.config.Config
 import com.dov.cm.modules.UChat
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import net.minecraft.client.MinecraftClient
 import net.minecraft.entity.Entity
 import net.minecraft.item.ItemStack
@@ -14,6 +18,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 object WeaponSwapper {
     private val mc: MinecraftClient = MinecraftClient.getInstance()
     private var lastSwapTime = 0L
+    private var originalSlot = -1
 
     fun init() {
         // Register tick event
@@ -92,12 +97,14 @@ object WeaponSwapper {
             }
         }
 
+
         return -1 // Not found
     }
 
     /**
      * Swap to the second weapon type
      */
+    @DelicateCoroutinesApi
     private fun swapToSecondWeapon() {
         val player = mc.player ?: return
 
@@ -108,8 +115,21 @@ object WeaponSwapper {
             return
         }
 
-        // Directly swap to second weapon
-        player.inventory.selectedSlot = secondWeaponSlot
+        // Store the original slot for swapping back
+        originalSlot = player.inventory.selectedSlot
+
+        GlobalScope.launch {
+            // Swap to second weapon
+            player.inventory.selectedSlot = secondWeaponSlot
+
+
+            // Swap back if configured
+            if (Config.weaponSwapBack) {
+                delay(50)
+                // Swap back to the original slot
+                player.inventory.selectedSlot = originalSlot
+            }
+        }
     }
 
     /**

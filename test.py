@@ -1,3 +1,3 @@
-hi = "habadacac".strip("ab")
+hi = "habadacac".strip("a").strip()
 
 print(hi)

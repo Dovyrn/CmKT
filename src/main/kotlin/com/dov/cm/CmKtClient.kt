@@ -3,10 +3,11 @@ package com.dov.cm
 import net.fabricmc.api.ClientModInitializer
 import com.dov.cm.commands.CommandHandler
 import com.dov.cm.config.Config
+import com.dov.cm.config.Config.annotation
 import com.dov.cm.modules.combat.*
 import com.dov.cm.modules.render.*
 import com.dov.cm.modules.combat.EnhancedHitbox
-import com.dov.cm.modules.render.Chams
+import com.dov.cm.modules.render.GlowESP
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.util.InputUtil
 import com.dov.cm.modules.render.StorageESP
@@ -23,7 +24,7 @@ object CmKtClient : ClientModInitializer {
         TargetHUD().onInitializeClient() // Register TargetHUD
         maceDive.init()
         EnhancedHitbox.init()
-        Chams.init()
+        GlowESP.init()
         WeaponSwapper.init()
         StorageESP.init()
         RenderHandler.init()
@@ -32,7 +33,18 @@ object CmKtClient : ClientModInitializer {
         ToggleSprint.init()
         AimAssist.init()
         Backtrack.init()
+        Triggerbot.init()
         WebServerManager.init()
+        if (annotation != null) {
+            println("Type: ${annotation.type}")
+            println("Name: ${annotation.name}")
+            println("Description: ${annotation.description}")
+            println("Category: ${annotation.category}")
+            println("Subcategory: ${annotation.subcategory}")
+        } else {
+            println("Annotation not found")
+        }
+        //WebServerManager.init()
 
         // Register a tick event to check key presses
         ClientTickEvents.END_CLIENT_TICK.register { client ->

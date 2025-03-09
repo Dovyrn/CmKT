@@ -5,6 +5,10 @@ import gg.essential.vigilance.data.Property
 import gg.essential.vigilance.data.PropertyType
 import java.awt.Color
 import java.io.File
+import kotlin.reflect.jvm.javaField
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.full.declaredMemberProperties
 
 /**
  * Configuration for the mod features
@@ -737,40 +741,63 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var backtrackWeaponOnly: Boolean = true
 
-    fun forceInitialize() {
-        try {
-            // Ensure the configuration file exists
-            val configFile = File("./config/CmKt/config.toml")
-            if (!configFile.exists()) {
-                configFile.parentFile?.mkdirs()
-                configFile.createNewFile()
-            }
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Triggerbot",
+        description = "Automatically attacks targets in crosshair",
+        category = "Combat",
+        subcategory = "Triggerbot"
+    )
+    var triggerbotEnabled: Boolean = false
 
-            // Ensure all properties have their default values set
-            initialize()
+    @Property(
+        type = PropertyType.SLIDER,
+        name = "Delay",
+        description = "Delay before attacking when a target enters reach (ms)",
+        category = "Combat",
+        subcategory = "Triggerbot",
+        min = 0,
+        max = 500
+    )
+    var triggerbotDelay: Int = 100
 
-            // Force save to create the file with default values
-            writeData()
-        } catch (e: Exception) {
-            println("Error during force initialization: ${e.message}")
-            e.printStackTrace()
-        }
-    }
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Weapon Only",
+        description = "Only activate when holding a weapon",
+        category = "Combat",
+        subcategory = "Triggerbot"
+    )
+    var triggerbotWeaponOnly: Boolean = true
 
-    // Override initialize to add more logging and error handling
-    fun yala() {
-        try {
-            super.initialize()
-            println("Config initialized successfully")
-        } catch (e: Exception) {
-            println("Error during config initialization: ${e.message}")
-            e.printStackTrace()
-        }
-    }
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Critical Hit",
+        description = "Only attack during fall damage conditions for guaranteed crits",
+        category = "Combat",
+        subcategory = "Triggerbot"
+    )
+    var triggerbotCritical: Boolean = false
+
+
+
+
+    val property = Config::class.objectInstance!!::class.declaredMemberProperties.find { it.name == "triggerbotCritical" }
+    val annotation = property?.javaField?.getAnnotation(Property::class.java)
+
+
+
+
+
+
 
 
     init {
         initialize()
+
+        addDependency("triggerbotDelay", "triggerbotEnabled")
+        addDependency("triggerbotWeaponOnly", "triggerbotEnabled")
+        addDependency("triggerbotCritical", "triggerbotEnabled")
 
         // Add log messages to help diagnose initialization
         println("Config object initialized")
@@ -795,6 +822,17 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
             "Combat",
             "Backtrack",
             "Delays player movement to allow hitting them from further away"
+        )
+        setSubcategoryDescription(
+            "Combat",
+            "Triggerbot",
+            "If (mc.player.crosshair on Entity){player.swing.mainHand}"
+        )
+
+        setSubcategoryDescription(
+            "Combat",
+            "Velocity",
+            "If (mc.player.crosshair on Entity){player.swing.mainHand}"
         )
 
         // Storage ESP type dependencies - these should only be active if the master switch is on
