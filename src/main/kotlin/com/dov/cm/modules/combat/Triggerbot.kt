@@ -4,7 +4,6 @@ import com.dov.cm.config.Config
 import com.dov.cm.modules.UChat
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
@@ -12,7 +11,9 @@ import net.minecraft.client.network.ClientPlayerEntity
 import net.minecraft.entity.Entity
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.*
+import net.minecraft.item.AxeItem
+import net.minecraft.item.MaceItem
+import net.minecraft.item.SwordItem
 import net.minecraft.util.Hand
 import net.minecraft.util.hit.EntityHitResult
 import net.minecraft.util.hit.HitResult
@@ -49,7 +50,7 @@ object Triggerbot {
      */
     private fun onTick() {
         val player = mc.player ?: return
-        val world = mc.world ?: return
+        mc.world ?: return
 
         // Check weapon-only condition
         if (Config.triggerbotWeaponOnly && !isHoldingWeapon()) {

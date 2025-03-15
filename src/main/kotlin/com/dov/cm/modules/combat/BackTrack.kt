@@ -193,7 +193,7 @@ object Backtrack {
     /**
      * Deactivate backtracking and reset state
      */
-    fun deactivate() {
+    private fun deactivate() {
         if (!active) return
 
         active = false

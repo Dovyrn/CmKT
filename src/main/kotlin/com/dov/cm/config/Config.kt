@@ -5,11 +5,6 @@ import gg.essential.vigilance.data.Property
 import gg.essential.vigilance.data.PropertyType
 import java.awt.Color
 import java.io.File
-import kotlin.reflect.jvm.javaField
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.full.declaredMemberProperties
-
 /**
  * Configuration for the mod features
  */
@@ -82,16 +77,9 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         category = "Combat",
         subcategory = "Mace Dive"
     )
-    var maceDiveEnabled: Boolean = false
+    var maceDiveEnabled: Boolean = true
 
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Swap Packet",
-        description = "Sends a packet to swap slots easier",
-        category = "Combat",
-        subcategory = "Mace Dive"
-    )
-    var SwapPacket: Boolean = false
+
 
     @Property(
         type = PropertyType.TEXT,
@@ -114,7 +102,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         min = 1,
         max = 25
     )
-    var groundDetectionHeight: Int = 3
+    var groundDetectionHeight: Int = 11
 
     @Property(
         type = PropertyType.SELECTOR,
@@ -153,7 +141,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         min = 1,
         max = 5
     )
-    var boostStrength: Int = 3
+    var boostStrength: Int = 1
 
     @Property(
         type = PropertyType.SLIDER,
@@ -164,7 +152,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         min = 10,
         max = 100
     )
-    var maxHeight: Int = 50
+    var maxHeight: Int = 10
 
     // MACE D-TAP
 
@@ -276,6 +264,33 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         subcategory = "Esp"
     )
     var espPlayerColor: Color = Color(255, 255, 255, 255)
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Tracers",
+        description = "Yala habibi",
+        category = "Render",
+        subcategory = "Esp"
+    )
+    var espTracerEnabled: Boolean = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Show Self",
+        description = "Renders yourself",
+        category = "Render",
+        subcategory = "Esp"
+    )
+    var espShowSelf: Boolean = true
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "NameTags",
+        description = "A tag for names",
+        category = "Render"
+    )
+    var nametagsEnabled: Boolean = true
+
 
     // Chams Settings
     @Property(
@@ -510,6 +525,9 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var fullBright : Boolean = true
 
+
+
+
     // AIM ASSIST
 
     @Property(
@@ -549,7 +567,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         min = 0,
         max = 500
     )
-    var aimAssistVisibleTime: Int = 100
+    var aimAssistVisibleTime: Int = 0
 
     @Property(
         type = PropertyType.DECIMAL_SLIDER,
@@ -561,7 +579,16 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         maxF = 1.0F,
         decimalPlaces = 2
     )
-    var aimAssistSmoothing: Float = 0.5F
+    var aimAssistSmoothing: Float = 1F
+
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Insta Target",
+        description = "Auto locks on ",
+        category = "Combat",
+        subcategory = "Aim Assist",
+    )
+    var aimAssistInstantTarget: Boolean = false
 
     @Property(
         type = PropertyType.SLIDER,
@@ -584,7 +611,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         maxF = 10.0F,
         decimalPlaces = 1
     )
-    var aimAssistRange: Float = 5.0F
+    var aimAssistRange: Float = 4.4F
 
     @Property(
         type = PropertyType.DECIMAL_SLIDER,
@@ -759,7 +786,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         min = 0,
         max = 500
     )
-    var triggerbotDelay: Int = 100
+    var triggerbotDelay: Int = 0
 
     @Property(
         type = PropertyType.SWITCH,
@@ -779,16 +806,63 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var triggerbotCritical: Boolean = false
 
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Kill Aura",
+        description = "Inf",
+        category = "Combat",
+        subcategory = "Kill Aura"
+    )
+    var killAuraEnabled: Boolean = false
 
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Crit-Only",
+        description = "Only attacks when falling down",
+        category = "Combat",
+        subcategory = "Kill Aura"
+    )
+    var killAuraCritOnly: Boolean = false
 
+    @Property(
+        type = PropertyType.SELECTOR,
+        name = "Rotation",
+        description = "Yes or no",
+        category = "Combat",
+        subcategory = "Kill Aura",
+        options = ["None", "Silent"]
+    )
+    var killAuraRotation: Int = 1
 
-    val property = Config::class.objectInstance!!::class.declaredMemberProperties.find { it.name == "triggerbotCritical" }
-    val annotation = property?.javaField?.getAnnotation(Property::class.java)
+    @Property(
+        type = PropertyType.DECIMAL_SLIDER,
+        name = "Reach",
+        description = "How far",
+        category = "Combat",
+        subcategory = "Kill Aura",
+        minF = 3.0f,
+        maxF = 6.0f
+    )
+    var killAuraReach: Float = 3.0F
 
+    @Property(
+        type = PropertyType.SELECTOR,
+        name = "Targets",
+        description = "Sigma",
+        category = "Combat",
+        subcategory = "Kill Aura",
+        options = ["Players", "Entities"]
+    )
+    var killAuraTargets: Int = 0
 
-
-
-
+    @Property(
+        type = PropertyType.SWITCH,
+        name = "Inf-Mode",
+        description = ":3",
+        category = "Combat",
+        subcategory = "Kill Aura"
+    )
+    var killauraInfMode: Boolean = false
 
 
 
@@ -816,6 +890,20 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("backtrackCooldown", "backtrackEnabled")
         addDependency("backtrackDisableOnHit", "backtrackEnabled")
         addDependency("backtrackWeaponOnly", "backtrackEnabled")
+
+        addDependency("killAuraCritOnly", "killAuraEnabled")
+        addDependency("killAuraRotation", "killAuraEnabled")
+        addDependency("killAuraReach", "killAuraEnabled")
+        addDependency("killAuraTargets", "killAuraEnabled")
+        addDependency("killauraInfMode", "killAuraEnabled")  // Add this line
+
+// Also add a subcategory description for KillAura if it doesn't exist
+        setSubcategoryDescription(
+            "Combat",
+            "Kill Aura",
+            "Automatically attacks entities within range"
+        )
+
 
         // Add category description
         setSubcategoryDescription(
@@ -904,6 +992,9 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("offsetY", "targetHudToggled")
         addDependency("showHead", "targetHudToggled")
         addDependency("background", "targetHudToggled")
+
+
+
 
         // Mace Dive dependencies
         addDependency("maceDiveKey", "maceDiveEnabled")

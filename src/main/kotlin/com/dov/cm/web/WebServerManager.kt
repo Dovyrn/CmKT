@@ -15,11 +15,12 @@ import kotlin.reflect.full.declaredMemberProperties
 import java.awt.Color
 import java.util.concurrent.ConcurrentHashMap
 
+
 /**
  * WebServerManager - Provides a web interface for mod configuration
  * Uses direct Java reflection to reliably access Config properties and annotations
  */
-class WebServerManager(private val port: Int = 8080) : NanoHTTPD(port) {
+class WebServerManager(port: Int = 8080) : NanoHTTPD(port) {
 
     companion object {
         private var instance: WebServerManager? = null
@@ -52,7 +53,7 @@ class WebServerManager(private val port: Int = 8080) : NanoHTTPD(port) {
     private val moduleMapping = mapOf(
         "aimAssist" to listOf(
             "aimAssistEnabled", "aimAssistMode", "stopOnEdge", "aimAssistVisibleTime",
-            "aimAssistSmoothing", "aimAssistFOV", "aimAssistRange", "aimAssistRandom",
+            "aimAssistSmoothing", "aimAssistInstantTarget" , "aimAssistFOV", "aimAssistRange", "aimAssistRandom",
             "aimAssistHitbox", "aimAssistWeaponOnly", "aimAssistStickyTarget",
             "aimAssistTargetPlayers", "aimAssistTargetCrystals", "aimAssistTargetEntities"
         ),
@@ -61,8 +62,12 @@ class WebServerManager(private val port: Int = 8080) : NanoHTTPD(port) {
             "backtrackMaxDelay", "backtrackMaxHurtTime", "backtrackCooldown",
             "backtrackDisableOnHit", "backtrackWeaponOnly"
         ),
+        "killAura" to listOf(
+            "killAuraEnabled", "killAuraTargets", "killAuraReach", "killAuraRotation", "killAuraCritOnly", "killauraInfMode"
+        ),
+
         "maceDive" to listOf(
-            "maceDiveEnabled", "SwapPacket", "maceDiveKey", "groundDetectionHeight",
+            "maceDiveEnabled","maceDiveKey", "groundDetectionHeight",
             "attackMode", "autoEquipElytra", "autoSwapChestplate", "boostStrength", "maxHeight"
         ),
         "hitbox" to listOf("HitboxEnabled", "hitboxExpand", "hitboxTargets"),
@@ -81,7 +86,11 @@ class WebServerManager(private val port: Int = 8080) : NanoHTTPD(port) {
             "showHead", "background"
         ),
         "utilities" to listOf("sprint", "noJumpDelay", "fullBright"),
-        "developer" to listOf("developerMode", "debugMessages")
+        "developer" to listOf("developerMode", "debugMessages"),
+        // New modules from Config.kt
+        "triggerbot" to listOf(
+            "triggerbotEnabled", "triggerbotDelay", "triggerbotWeaponOnly", "triggerbotCritical"
+        )
     )
 
     // Module metadata for UI rendering
@@ -97,7 +106,10 @@ class WebServerManager(private val port: Int = 8080) : NanoHTTPD(port) {
         "storageEsp" to ModuleInfo("Storage ESP", "Find containers", "fas fa-box", "render"),
         "targetHud" to ModuleInfo("TargetHUD", "Combat information", "fas fa-info-circle", "render"),
         "utilities" to ModuleInfo("Utilities", "Quality of life", "fas fa-tools", "utilities"),
-        "developer" to ModuleInfo("Developer", "Debug options", "fas fa-code", "developer")
+        "developer" to ModuleInfo("Developer", "Debug options", "fas fa-code", "developer"),
+        // New module from Config.kt
+        "triggerbot" to ModuleInfo("Triggerbot", "Automatic attack targeting", "fas fa-bullseye", "combat"),
+        "killAura" to ModuleInfo("Kill Aura", "Auto attack nearby", "fa-solid fa-skull-crossbones", "combat")
     )
 
     override fun serve(session: IHTTPSession): Response {

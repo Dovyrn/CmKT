@@ -7,7 +7,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.minecraft.client.MinecraftClient
-import net.minecraft.entity.Entity
 import net.minecraft.item.ItemStack
 import net.minecraft.item.Items
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -32,18 +31,10 @@ object WeaponSwapper {
     }
 
     /**
-     * Check if an attack should be canceled
-     * This is called from the mixin
-     */
-    fun shouldCancelAttack(target: Entity): Boolean {
-        // We never want to cancel attacks
-        return false
-    }
-
-    /**
      * Attempt to swap weapons before attack
      * This should be called from the attack mixin before the attack happens
      */
+    @OptIn(DelicateCoroutinesApi::class)
     fun trySwapWeapon() {
         // Skip if weapon swapper is disabled
         if (!Config.weaponSwapper) return

@@ -1,5 +1,7 @@
 package com.logicalgeekboy.logical_zoom;
 
+
+import com.dov.cm.util.ModSounds;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.util.InputUtil;
@@ -27,6 +29,7 @@ public class LogicalZoom implements ClientModInitializer {
 
         KeyBindingHelper.registerKeyBinding(keyBinding);
         CmKtClient.INSTANCE.onInitializeClient();
+        ModSounds.INSTANCE.registerSounds();
     }
 
     public static boolean isZooming() {

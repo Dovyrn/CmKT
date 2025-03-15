@@ -2,12 +2,14 @@ package com.dov.cm.modules.combat
 
 import com.dov.cm.config.Config
 import com.dov.cm.modules.UChat
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.entity.Entity
+import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.decoration.EndCrystalEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.AxeItem
@@ -17,6 +19,8 @@ import net.minecraft.util.hit.HitResult
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Vec3d
 import net.minecraft.world.RaycastContext
+import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.sqrt
 
 /**
@@ -37,9 +41,7 @@ object AimAssist {
     // Smooth rotation tracking
     private var targetRotation: Rotation? = null
     private var currentRotation: Rotation? = null
-    private var rotationStartTime: Long = 0
-    private var rotationDuration: Long = 0
-    var aimAssistStopOnEdge: Boolean = Config.stopOnEdge
+    private var aimAssistStopOnEdge: Boolean = Config.stopOnEdge
 
 
     /**
@@ -254,26 +256,26 @@ object AimAssist {
             return false
         }
 
-        // Only target players and crystals
-        if (entity !is EndCrystalEntity && entity !is PlayerEntity) {
-            return false
-        }
-
         // Don't target self
         if (entity == mc.player) {
             return false
         }
 
-        // Check target settings
-        if (entity is PlayerEntity && !Config.aimAssistTargetPlayers) {
-            return false
+        // Check target settings for specific entity types
+        if (entity is PlayerEntity) {
+            return Config.aimAssistTargetPlayers
         }
 
-        if (entity is EndCrystalEntity && !Config.aimAssistTargetCrystals) {
-            return false
+        if (entity is EndCrystalEntity) {
+            return Config.aimAssistTargetCrystals
         }
 
-        return true
+        if (entity is LivingEntity) {
+            return Config.aimAssistTargetEntities
+        }
+
+        // Reject any other types of entities
+        return false
     }
 
     /**
@@ -302,10 +304,10 @@ object AimAssist {
         val horizontalDistance = sqrt(deltaX * deltaX + deltaZ * deltaZ)
 
         val yaw = MathHelper.wrapDegrees(
-            Math.toDegrees(Math.atan2(deltaZ.toDouble(), deltaX.toDouble())).toFloat() - 90f
+            Math.toDegrees(atan2(deltaZ.toDouble(), deltaX.toDouble())).toFloat() - 90f
         )
         val pitch = MathHelper.wrapDegrees(
-            -Math.toDegrees(Math.atan2(deltaY.toDouble(), horizontalDistance.toDouble())).toFloat()
+            -Math.toDegrees(atan2(deltaY.toDouble(), horizontalDistance.toDouble())).toFloat()
         )
 
         return Rotation(yaw, pitch)
@@ -315,8 +317,8 @@ object AimAssist {
      * Check if a rotation is within FOV
      */
     private fun inRange(current: Rotation, needed: Rotation, fov: Float): Boolean {
-        return Math.abs(wrap(needed.yaw - current.yaw)) < fov &&
-                Math.abs(wrap(needed.pitch - current.pitch)) < fov
+        return abs(wrap(needed.yaw - current.yaw)) < fov &&
+                abs(wrap(needed.pitch - current.pitch)) < fov
     }
 
     /**
@@ -337,8 +339,17 @@ object AimAssist {
     /**
      * Smoothly rotate towards the target rotation
      */
+    @OptIn(DelicateCoroutinesApi::class)
     private fun smoothRotate(targetRot: Rotation, smoothing: Float) {
         val player = mc.player ?: return
+
+        // If instaLock is enabled, instantly set rotation and return
+        if (Config.aimAssistInstantTarget) {
+            player.yaw = targetRot.yaw
+            player.pitch = MathHelper.clamp(targetRot.pitch, -90f, 90f)
+            resetRotation()
+            return
+        }
 
         GlobalScope.launch {
             repeat(50) { // Perform the rotation 50 times
@@ -355,12 +366,12 @@ object AimAssist {
 
                 // Add vertical precision check
                 // Only rotate horizontally if vertical aim is very close to target
-                val shouldRotateHorizontally = Math.abs(pitchDiff) < 5f
+                val shouldRotateHorizontally = abs(pitchDiff) < 5f
 
                 // Limit rotation change
                 val adjustedYawChange = if (shouldRotateHorizontally) {
                     when {
-                        Math.abs(yawDiff) <= maxYawChange -> yawDiff
+                        abs(yawDiff) <= maxYawChange -> yawDiff
                         yawDiff > 0 -> maxYawChange
                         else -> -maxYawChange
                     }
@@ -369,7 +380,7 @@ object AimAssist {
                 }
 
                 val adjustedPitchChange = when {
-                    Math.abs(pitchDiff) <= maxPitchChange -> pitchDiff
+                    abs(pitchDiff) <= maxPitchChange -> pitchDiff
                     pitchDiff > 0 -> maxPitchChange
                     else -> -maxPitchChange
                 }
@@ -379,7 +390,7 @@ object AimAssist {
                 player.pitch = MathHelper.clamp(currentPitch + adjustedPitchChange, -90f, 90f)
 
                 // Check if we're close enough to the target rotation
-                if (Math.abs(yawDiff) <= 0.1f && Math.abs(pitchDiff) <= 0.1f) {
+                if (abs(yawDiff) <= 0.1f && abs(pitchDiff) <= 0.1f) {
                     // Directly set to target if very close
                     player.yaw = targetRot.yaw
                     player.pitch = targetRot.pitch
@@ -406,13 +417,6 @@ object AimAssist {
     private fun resetRotation() {
         targetRotation = null
         currentRotation = null
-    }
-
-    /**
-     * Interpolate between two values
-     */
-    private fun interpolate(start: Float, end: Float, delta: Float): Float {
-        return start + (end - start) * delta
     }
 
     /**

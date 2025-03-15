@@ -11,6 +11,7 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.ChatScreen
 import net.minecraft.entity.LivingEntity
 import net.minecraft.util.ActionResult
+import com.dov.cm.modules.combat.KillAura
 
 class TargetHUD : ClientModInitializer {
     private var target: LivingEntity? = null
@@ -29,11 +30,16 @@ class TargetHUD : ClientModInitializer {
             ActionResult.PASS
         }
 
+
         ClientTickEvents.END_CLIENT_TICK.register {
             val mc = MinecraftClient.getInstance()
             val player = mc.player ?: return@register
 
-            if (mc.currentScreen is ChatScreen) {
+            // First check if KillAura has a target
+            if (KillAura.currentTarget is LivingEntity && (KillAura.currentTarget as LivingEntity).isAlive) {
+                target = KillAura.currentTarget as LivingEntity
+                lastHitTime = System.currentTimeMillis()
+            } else if (mc.currentScreen is ChatScreen) {
                 target = player
                 lastHitTime = System.currentTimeMillis()
             } else {

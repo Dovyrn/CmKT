@@ -1,9 +1,8 @@
 package com.dov.cm.modules.render
 
 import com.dov.cm.config.Config
-import com.dov.cm.modules.UChat
-import com.dov.cm.util.BlockEspUtil
-import com.dov.cm.util.BlockTracerUtil
+import com.mojang.blaze3d.systems.RenderSystem
+import com.dov.cm.util.RenderUtils
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
 import net.minecraft.block.Blocks
@@ -13,8 +12,8 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import net.minecraft.world.chunk.WorldChunk
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.awt.Color
+import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  * Storage ESP module for highlighting various storage blocks
@@ -39,6 +38,7 @@ object StorageESP {
     fun init() {
         // At the start of init():
         println("StorageESP init - enabled: ${Config.storageEspEnabled}")
+
         // Register tick event to update storage positions periodically
         ClientTickEvents.END_CLIENT_TICK.register { _ ->
             if (Config.storageEspEnabled && shouldUpdatePositions()) {
@@ -49,14 +49,14 @@ object StorageESP {
         // Register render event - use BEFORE_ENTITIES to make ESP render behind blocks
         WorldRenderEvents.AFTER_ENTITIES.register { context ->
             if (Config.storageEspEnabled) {
-                context.matrixStack()?.let { renderStorageBlocks(it) }
+                context.matrixStack()?.let { renderStorageBlocks(it, context.tickCounter().getTickDelta(true)) }
             }
         }
 
         // Register after translucent event for tracers
         WorldRenderEvents.AFTER_TRANSLUCENT.register { context ->
             if (Config.storageEspEnabled && Config.storageEspTracers) {
-                context.matrixStack()?.let { renderStorageTracers(it) }
+                context.matrixStack()?.let { renderStorageTracers(it, context.tickCounter().getTickDelta(true)) }
             }
         }
     }
@@ -77,7 +77,6 @@ object StorageESP {
      * Update the list of storage blocks to render
      */
     private fun updateStoragePositions() {
-        // In updateStoragePositions() method, add:
         // Clear the existing list
         storageBlocks.clear()
 
@@ -150,53 +149,53 @@ object StorageESP {
                 block is ShulkerBoxBlock && Config.shulkerEspEnabled -> {
                     storageBlocks.add(StorageBlockInfo(pos, Config.shulkerEspColor, StorageType.SHULKER))
                 }
-
             }
         }
-        // Add at the end of processChunk:
     }
 
     /**
      * Render ESP for all stored storage blocks
      */
-    private fun renderStorageBlocks(matrixStack: MatrixStack) {
+    private fun renderStorageBlocks(matrixStack: MatrixStack, partialTicks: Float) {
         // Skip if no blocks to render
         if (storageBlocks.isEmpty()) return
 
-        // Process each storage block
+        // Process each storage block for direct drawing
         storageBlocks.forEach { info ->
             try {
-                // Create the colors we need for filled and outlined rendering
-                // Use full alpha for outline
-                val outlineColor = Color(
-                    info.color.red,
-                    info.color.green,
-                    info.color.blue,
-                    255
-                )
-
-
-
-                // Create an expanded box to fully cover the block
+                // Create a box for the block
                 val pos = info.pos
+
+                // Create the box with an offset to the camera position to render properly
+                val cameraPos = RenderUtils.getCameraPos()
+                val offsetX = pos.x - cameraPos.x
+                val offsetY = pos.y - cameraPos.y
+                val offsetZ = pos.z - cameraPos.z
+
                 val expandedBox = Box(
-                    pos.x.toDouble(),
-                    pos.y.toDouble(),
-                    pos.z.toDouble(),
-                    pos.x.toDouble() + 1.001,
-                    pos.y.toDouble() + 1.001,
-                    pos.z.toDouble() + 1.001
+                    offsetX,
+                    offsetY,
+                    offsetZ,
+                    offsetX + 1.001,
+                    offsetY + 1.001,
+                    offsetZ + 1.001
                 )
 
-                // Use the standard renderBox method from BlockEspUtil
-                BlockEspUtil.renderBox(
-                    expandedBox,
-                    outlineColor,
-                    10F,
-                    filled = true,
-                    outlined = true,
-                    fillOpacity = Config.storageEspOpacity
+                // Push matrix and set color
+                matrixStack.push()
+                RenderSystem.setShaderColor(
+                    info.color.red / 255f,
+                    info.color.green / 255f,
+                    info.color.blue / 255f,
+                    Config.storageEspOpacity / 255f
                 )
+
+                // Draw the outlined box
+                RenderUtils.drawOutlinedBox(expandedBox, matrixStack)
+
+                // Reset color and pop matrix
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
+                matrixStack.pop()
 
             } catch (e: Exception) {
                 println(e)
@@ -207,30 +206,37 @@ object StorageESP {
     /**
      * Render tracers for all storage blocks
      */
-    private fun renderStorageTracers(matrixStack: MatrixStack) {
+    private fun renderStorageTracers(matrixStack: MatrixStack, partialTicks: Float) {
         // Skip if no blocks to render or tracers disabled
         if (storageBlocks.isEmpty() || !Config.storageEspTracers) return
+
+        // Setup rendering
+        RenderUtils.setupRenderWithShader(matrixStack)
+
+        // Get buffer builder
+        val buffer = RenderUtils.getBufferBuilder()
+        val matrix = matrixStack.peek().positionMatrix
 
         // Process each storage block
         storageBlocks.forEach { info ->
             try {
-                // Create a color with the correct opacity
-                val color = Color(
-                    info.color.red,
-                    info.color.green,
-                    info.color.blue,
-                    255 // Full alpha for tracers
-                )
-
-                // Render tracer from screen center to block
-                BlockTracerUtil.renderTracer(
+                // Draw tracer from screen center to block using RenderUtils
+                RenderUtils.drawSingleLine(
+                    buffer,
+                    matrix,
+                    partialTicks,
                     info.pos,
-                    color,
-                    10F
+                    info.color.red / 255f,
+                    info.color.green / 255f,
+                    info.color.blue / 255f,
+                    1.0f
                 )
             } catch (e: Exception) {
                 // Handle silently
             }
         }
+
+        // Draw the buffer and clean up
+        RenderUtils.drawBuffer(buffer, matrixStack)
     }
 }

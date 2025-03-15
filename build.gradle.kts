@@ -53,7 +53,7 @@ dependencies {
 	// Config UI (for ModMenu integration)
 	modImplementation("net.fabricmc.fabric-api:fabric-renderer-api-v1:1.21.4+api+build")
 
-	implementation("org.nanohttpd:nanohttpd:2.3.1")
+	modImplementation(include("org.nanohttpd:nanohttpd:2.3.1")!!)
 
 
 }
@@ -70,6 +70,9 @@ tasks.processResources {
 		)
 	}
 }
+
+
+
 
 tasks.withType<JavaCompile>().configureEach {
 	options.encoding = "UTF-8" // Ensure UTF-8 encoding

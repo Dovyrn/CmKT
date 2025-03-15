@@ -3,6 +3,7 @@ package com.dov.cm.commands
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents
 import net.minecraft.client.MinecraftClient
 import com.dov.cm.config.Config
+import com.dov.cm.util.ModSounds
 import kotlin.concurrent.thread
 
 
@@ -34,6 +35,9 @@ object CommandHandler {
             }
         } else if (initCommand == "test"){
             Config.sprint = false
+        } else if (initCommand == "inf" && Config.killauraInfMode){
+            val player = MinecraftClient.getInstance().player
+            player?.playSound(ModSounds.LOVE_IS_WAR, 1.0f, 1.0f)
         }
     }
 }

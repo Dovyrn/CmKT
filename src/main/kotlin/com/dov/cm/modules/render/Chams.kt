@@ -4,11 +4,9 @@ import com.dov.cm.config.Config
 import com.dov.cm.modules.UChat
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
-import net.minecraft.client.network.AbstractClientPlayerEntity
 import net.minecraft.entity.Entity
 import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.entity.effect.StatusEffectInstance
-import net.minecraft.entity.effect.StatusEffects
+
 object GlowESP {
     private val mc: MinecraftClient = MinecraftClient.getInstance()
 
@@ -37,7 +35,7 @@ object GlowESP {
      * Update glow effect for players
      */
     private fun updateGlowEffect() {
-        val player = mc.player ?: return
+        mc.player ?: return
         val world = mc.world ?: return
 
         // Check weapon-only condition if enabled
@@ -76,22 +74,4 @@ object GlowESP {
         return true
     }
 
-    /**
-     * Reset glow effect when module is disabled
-     */
-    fun resetGlowEffect() {
-        val world = mc.world ?: return
-
-        // Remove glow from all entities
-        world.entities.forEach { entity ->
-            entity.isGlowing = false
-        }
-    }
-
-    /**
-     * Cleanup method to ensure glow is removed when module is unloaded
-     */
-    fun onDisable() {
-        resetGlowEffect()
-    }
 }
