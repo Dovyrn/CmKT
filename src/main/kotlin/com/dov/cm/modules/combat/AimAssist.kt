@@ -1,441 +1,280 @@
 package com.dov.cm.modules.combat
 
 import com.dov.cm.config.Config
+import com.dov.cm.event.EventBus
+import com.dov.cm.event.EventListener
+import com.dov.cm.event.Render2DEvent
+import com.dov.cm.managers.AntiBotManager
 import com.dov.cm.modules.UChat
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import com.dov.cm.util.RandomUtil
+import com.dov.cm.util.Rotation
+import com.dov.cm.util.RotationUtil
+import com.dov.cm.util.TimerUtil
 import net.minecraft.client.MinecraftClient
 import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.decoration.EndCrystalEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.AxeItem
-import net.minecraft.item.SwordItem
 import net.minecraft.item.MaceItem
+import net.minecraft.item.SwordItem
 import net.minecraft.util.hit.HitResult
-import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Vec3d
 import net.minecraft.world.RaycastContext
-import kotlin.math.abs
-import kotlin.math.atan2
 import kotlin.math.sqrt
 
-/**
- * AimAssist module - Helps with aiming at targets with smoother, time-based rotation
- */
-object AimAssist {
-    private val mc: MinecraftClient = MinecraftClient.getInstance()
+class AimAssist(private val eventBus: EventBus) {
 
-    // Target tracking
-    private var target: Entity? = null
+    private var playerTarget = Config.aimAssistTargetPlayers
+    private var crystalTarget = Config.aimAssistTargetCrystals
+    private var mode = Config.aimAssistMode
+    private var visibleTime = Config.aimAssistVisibleTime
+    private var stopOnEdge = Config.stopOnEdge
+    private var instantTarget = Config.aimAssistInstantTarget
+
+    private var smoothing: Float = Config.aimAssistSmoothing
+    private var fov = Config.aimAssistFOV
+    private var range = Config.aimAssistRange
+    private var random = Config.aimAssistRandom
+    private var hitbox = Config.aimAssistHitbox
+    private var weaponOnly = Config.aimAssistWeaponOnly
+    private var oneTarget = Config.aimAssistStickyTarget
+    private var randomTimer: TimerUtil = TimerUtil()
+    private var visibleTimer: TimerUtil = TimerUtil()
     private var randomValue: Float = 0f
+    var target: Entity? = null
+    private var antiBotManager = AntiBotManager(eventBus)
+    private var debugActive = true
+    private var lastDebugMessage: String = ""
 
-    // Timing and smoothing utilities
-    private val randomTimer = TimerUtil()
-    private val visibleTimer = TimerUtil()
-    private val rotationTimer = TimerUtil()
+    val mc: MinecraftClient = MinecraftClient.getInstance()
 
-    // Smooth rotation tracking
-    private var targetRotation: Rotation? = null
-    private var currentRotation: Rotation? = null
-    private var aimAssistStopOnEdge: Boolean = Config.stopOnEdge
-
-
-    /**
-     * Initialize the AimAssist module
-     */
-    fun init() {
-        // Use ClientTickEvents instead of HudRenderCallback to avoid potential null issues
-        ClientTickEvents.END_CLIENT_TICK.register { _ ->
-            if (Config.aimAssistEnabled) {
-                try {
-                    onTick()
-                } catch (e: Exception) {
-                    // Prevent crashes
-                }
-            }
-        }
-
-        UChat.mChat("AimAssist module initialized")
+    init {
+        // Register immediately in constructor
+        println("[AimAssist] Initializing and registering with eventBus: $eventBus")
+        eventBus.registerListener(this)
+        println("[AimAssist] Registered methods should include 'event'")
     }
 
-    /**
-     * Main handler for aim assist - handles the core logic
-     */
-    private fun onTick() {
-        // Skip if screen is open or window not focused
-        if (mc.currentScreen != null || !mc.isWindowFocused) {
+    @EventListener
+    fun event(event: Render2DEvent) {
+        // ===== DEBUGGING =====
+        println("[AimAssist] Event received! Aim assist enabled: ${Config.aimAssistEnabled}")
+
+        // Check if aim assist is enabled
+        if (!Config.aimAssistEnabled) {
+            debug("Aim assist disabled")
             return
         }
 
-        // Safety check for player and world
-        val player = mc.player ?: return
-        val world = mc.world ?: return
-
-        // Update smooth rotation
-        updateRotation()
-
-        // Skip if already looking at an entity
-        if (mc.crosshairTarget?.type == HitResult.Type.ENTITY && aimAssistStopOnEdge) {
+        if (mc.currentScreen != null) {
+            debug("Screen is open")
             return
         }
 
-        // Skip if weapon-only is enabled and not holding a weapon
-        if (Config.aimAssistWeaponOnly) {
-            val mainHandItem = player.mainHandStack.item
-            if (mainHandItem !is SwordItem && mainHandItem !is AxeItem && mainHandItem !is MaceItem) {
+        if (!mc.isWindowFocused) {
+            debug("Window not focused")
+            return
+        }
+
+        if (mc.crosshairTarget?.type == HitResult.Type.ENTITY) {
+            debug("Already targeting entity")
+            return
+        }
+
+        if (weaponOnly) {
+            val mainItem = mc.player?.mainHandStack?.item
+            debug("Weapon check: ${mainItem?.javaClass?.simpleName}")
+
+            if (mainItem !is SwordItem && mainItem !is AxeItem && mainItem !is MaceItem) {
+                debug("Not holding weapon")
                 return
             }
         }
 
-        // Get current rotation
-        val rotation = Rotation(player.yaw, player.pitch)
+        val rotation = Rotation(mc.player!!.yaw, mc.player!!.pitch)
+        debug("Current rotation: ${rotation.yaw}, ${rotation.pitch}")
 
-        // Check if current target is still valid
+        // Target validation
         if (target != null) {
-            // Make sure target still exists and is loaded
-            if (!target!!.isAlive) {
+            val vec3d = target!!.pos
+            val distance = sqrt(mc.player!!.squaredDistanceTo(vec3d.x, vec3d.y, vec3d.z))
+            debug("Current target: ${target?.javaClass?.simpleName}, distance: $distance, range: $range")
+
+            if (distance > range) {
+                debug("Target out of range")
                 target = null
-                resetRotation()
-            } else {
-                val pos = target!!.pos
+            }
 
-                // Check distance
-                if (sqrt(player.squaredDistanceTo(pos)) > Config.aimAssistRange) {
-                    target = null
-                    resetRotation()
-                } else {
-                    // Check if target is still in FOV
-                    val height = getHeight(target!!.height)
+            val neededRotation = RotationUtil.INSTANCE.getNeededRotations(
+                vec3d.x.toFloat(),
+                (vec3d.y - getHeight(target!!.height)).toFloat(),
+                vec3d.z.toFloat()
+            )
 
-                    val neededRot = getNeededRotations(
-                        pos.x.toFloat(),
-                        (pos.y - height).toFloat(),
-                        pos.z.toFloat()
-                    )
+            val inFovRange = RotationUtil.INSTANCE.inRange(rotation, neededRotation, fov.toFloat())
+            debug("In FOV range: $inFovRange")
 
-                    if (!inRange(rotation, neededRot, Config.aimAssistFOV.toFloat())) {
-                        target = null
-                        resetRotation()
-                    }
-                }
+            if (!inFovRange) {
+                debug("Target out of FOV")
+                target = null
             }
         }
 
-        // Find new target if needed
-        if (!Config.aimAssistStickyTarget || target == null) {
+        // Find target if needed
+        if (!oneTarget || target == null) {
+            debug("Finding new target")
             target = getTarget(rotation)
+            debug("Found target: ${target?.javaClass?.simpleName}")
         }
 
-        // If no target, reset and return
         if (target == null) {
+            debug("No valid target")
             visibleTimer.reset()
-            resetRotation()
             return
         }
 
-        // Safety check that target still exists
-        if (!target!!.isAlive) {
-            target = null
-            visibleTimer.reset()
-            resetRotation()
-            return
-        }
-
-        // Get eye position and adjust for hitbox setting
-        val eyePos = target!!.eyePos
-        val height = getHeight(target!!.height)
-        val targetY = eyePos.y - height
-
-        // Check visibility with raycast
-        val raycast = world.raycast(RaycastContext(
-            player.getCameraPosVec(mc.renderTickCounter.getTickDelta(true)),
-            Vec3d(eyePos.x, targetY, eyePos.z),
-            RaycastContext.ShapeType.OUTLINE,
-            RaycastContext.FluidHandling.ANY,
-            player
-        ))
-
-        // If target is behind a block, reset and return
-        if (raycast.type == HitResult.Type.BLOCK) {
-            visibleTimer.reset()
-            resetRotation()
-            return
-        }
-
-        // Check if target has been visible long enough
-        if (!visibleTimer.delay(Config.aimAssistVisibleTime.toFloat())) {
-            return
-        }
-
-        // Calculate needed rotation to aim at target
-        val neededRotation = getNeededRotations(
-            eyePos.x.toFloat(),
-            targetY.toFloat(),
-            eyePos.z.toFloat()
+        // Check line of sight
+        val vec3d = target!!.eyePos
+        val d = vec3d.y - getHeight(target!!.height)
+        val raycast = mc.world!!.raycast(
+            RaycastContext(
+                mc.player!!.getCameraPosVec(mc.renderTickCounter.getTickDelta(true)),
+                Vec3d(vec3d.x, d, vec3d.z),
+                RaycastContext.ShapeType.OUTLINE,
+                RaycastContext.FluidHandling.ANY,
+                mc.player
+            )
         )
 
-        // Update randomness value periodically
-        if (randomTimer.delay(1000 * Config.aimAssistSmoothing)) {
-            randomValue = if (Config.aimAssistRandom > 0) {
-                -(Config.aimAssistRandom / 2) + (Math.random().toFloat() * Config.aimAssistRandom)
+        if (raycast.type == HitResult.Type.BLOCK) {
+            debug("Target obscured by block")
+            visibleTimer.reset()
+            return
+        }
+
+        // Check visibility timer
+        val visTimerOk = randomTimer.delay(visibleTime.toFloat())
+        debug("Visibility timer check: $visTimerOk")
+
+        if (!visTimerOk) {
+            return
+        }
+
+        // Get needed rotation
+        val rotation3 = RotationUtil.INSTANCE.getNeededRotations(vec3d.x.toFloat(), d.toFloat(), vec3d.z.toFloat())
+        debug("Target rotation: ${rotation3.yaw}, ${rotation3.pitch}")
+
+        // Calculate randomness
+        if (randomTimer.delay(1000 * smoothing)) {
+            randomValue = if (random > 0) {
+                -(random / 2) + RandomUtil.INSTANCE.random.nextFloat() * random
             } else {
                 0f
             }
             randomTimer.reset()
+            debug("New random value: $randomValue")
         }
 
-        // Determine rotation mode
-        val finalRotation = when (Config.aimAssistMode) {
-            0 -> neededRotation // Both axes
-            1 -> Rotation(neededRotation.yaw, player.pitch) // Horizontal only
-            2 -> Rotation(player.yaw, neededRotation.pitch) // Vertical only
-            else -> neededRotation
-        }
+        // Apply rotation
+        debug("Applying rotation with mode: $mode")
 
-        // Smooth rotation handling
-        if (rotationTimer.delay(50f)) { // Approximately 20 times per second
-            // Initiate smooth rotation
-            smoothRotate(finalRotation, Config.aimAssistSmoothing)
-            rotationTimer.reset()
+        when (mode) {
+            2 -> { // Vertical only
+                val success = RotationUtil.INSTANCE.setPitch(rotation3, smoothing, randomValue, 2f)
+                debug("Applied vertical rotation: $success")
+            }
+            1 -> { // Horizontal only
+                debug("Horizontal mode not implemented correctly")
+            }
+            0 -> { // Both
+                val success = RotationUtil.INSTANCE.setRotation(rotation3, smoothing, randomValue, 2f)
+                debug("Applied full rotation: $success")
+            }
         }
     }
 
-    /**
-     * Find the best target based on distance and FOV
-     */
     private fun getTarget(rotation: Rotation): Entity? {
-        val world = mc.world ?: return null
-        val player = mc.player ?: return null
-
-        var bestTarget: Entity? = null
+        var entity: Entity? = null
         var closestDistance = Double.MAX_VALUE
+        var entitiesChecked = 0
+        var potentialTargets = 0
 
-        world.entities.forEach { entity ->
-            if (isEntityValid(entity)) {
-                try {
-                    val eyePos = entity.eyePos
-                    val height = getHeight(entity.height)
-                    val targetY = eyePos.y - height
+        mc.world?.entities?.forEach { entity2 ->
+            entitiesChecked++
+            if (isEntityValid(entity2) && antiBotManager.isNotBot(entity2)) {
+                potentialTargets++
+                val vec3d = entity2.eyePos
+                val d2 = vec3d.y - getHeight(entity2.height)
+                val d3 = mc.player!!.squaredDistanceTo(vec3d.x, d2, vec3d.z)
+                val actualDistance = sqrt(mc.player!!.squaredDistanceTo(vec3d.x, vec3d.y, vec3d.z))
 
-                    val distanceSq = player.squaredDistanceTo(eyePos.x, targetY, eyePos.z)
-                    val distance = sqrt(player.squaredDistanceTo(eyePos))
-
-                    if (distanceSq < closestDistance &&
-                        distance <= Config.aimAssistRange) {
-
-                        // Check FOV
-                        val neededRot = getNeededRotations(
-                            eyePos.x.toFloat(),
-                            targetY.toFloat(),
-                            eyePos.z.toFloat()
-                        )
-
-                        if (inRange(rotation, neededRot, Config.aimAssistFOV.toFloat())) {
-                            bestTarget = entity
-                            closestDistance = distanceSq
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Skip any entities that cause problems
+                if (d3 < closestDistance &&
+                    actualDistance <= range &&
+                    RotationUtil.INSTANCE.inRange(
+                        rotation,
+                        RotationUtil.INSTANCE.getNeededRotations(vec3d.x.toFloat(), d2.toFloat(), vec3d.z.toFloat()),
+                        fov.toFloat()
+                    )
+                ) {
+                    entity = entity2
+                    closestDistance = d3
                 }
             }
         }
 
-        return bestTarget
+        debug("Checked $entitiesChecked entities, found $potentialTargets valid targets")
+        return entity
     }
 
-    /**
-     * Check if an entity is a valid target
-     */
     private fun isEntityValid(entity: Entity): Boolean {
-        if (!entity.isAlive) {
-            return false
-        }
-
         // Don't target self
         if (entity == mc.player) {
             return false
         }
 
-        // Check target settings for specific entity types
-        if (entity is PlayerEntity) {
-            return Config.aimAssistTargetPlayers
-        }
-
-        if (entity is EndCrystalEntity) {
-            return Config.aimAssistTargetCrystals
-        }
-
-        if (entity is LivingEntity) {
-            return Config.aimAssistTargetEntities
-        }
-
-        // Reject any other types of entities
-        return false
-    }
-
-    /**
-     * Get the height offset based on hitbox setting
-     */
-    private fun getHeight(height: Float): Float {
-        return when (Config.aimAssistHitbox) {
-            0 -> 0f            // Eye
-            1 -> height / 2    // Center
-            2 -> height        // Bottom
-            else -> 0f
+        // Check entity types
+        when (entity) {
+            is PlayerEntity -> return playerTarget
+            is EndCrystalEntity -> return crystalTarget
+            else -> return Config.aimAssistTargetEntities
         }
     }
 
-    /**
-     * Calculate the rotation needed to aim at a position
-     */
-    private fun getNeededRotations(x: Float, y: Float, z: Float): Rotation {
-        val player = mc.player ?: return Rotation(0f, 0f)
-        val eyePos = player.eyePos
-
-        val deltaX = x - eyePos.x.toFloat()
-        val deltaY = y - eyePos.y.toFloat()
-        val deltaZ = z - eyePos.z.toFloat()
-
-        val horizontalDistance = sqrt(deltaX * deltaX + deltaZ * deltaZ)
-
-        val yaw = MathHelper.wrapDegrees(
-            Math.toDegrees(atan2(deltaZ.toDouble(), deltaX.toDouble())).toFloat() - 90f
-        )
-        val pitch = MathHelper.wrapDegrees(
-            -Math.toDegrees(atan2(deltaY.toDouble(), horizontalDistance.toDouble())).toFloat()
-        )
-
-        return Rotation(yaw, pitch)
-    }
-
-    /**
-     * Check if a rotation is within FOV
-     */
-    private fun inRange(current: Rotation, needed: Rotation, fov: Float): Boolean {
-        return abs(wrap(needed.yaw - current.yaw)) < fov &&
-                abs(wrap(needed.pitch - current.pitch)) < fov
-    }
-
-    /**
-     * Wrap angle to -180..180 range
-     */
-    private fun wrap(value: Float): Float {
-        var wrapped = value % 360f
-        if (wrapped >= 180f) wrapped -= 360f
-        if (wrapped < -180f) wrapped += 360f
-        return wrapped
-    }
-
-    /**
-     * Smoothly rotate towards the target rotation
-     */
-
-
-    /**
-     * Smoothly rotate towards the target rotation
-     */
-    @OptIn(DelicateCoroutinesApi::class)
-    private fun smoothRotate(targetRot: Rotation, smoothing: Float) {
-        val player = mc.player ?: return
-
-        // If instaLock is enabled, instantly set rotation and return
-        if (Config.aimAssistInstantTarget) {
-            player.yaw = targetRot.yaw
-            player.pitch = MathHelper.clamp(targetRot.pitch, -90f, 90f)
-            resetRotation()
-            return
+    private fun getHeight(f: Float): Float {
+        return when (hitbox) {
+            0 -> 0f         // Eye level
+            1 -> f / 2      // Center
+            else -> f       // Bottom
         }
+    }
 
-        GlobalScope.launch {
-            repeat(50) { // Perform the rotation 50 times
-                val currentYaw = player.yaw
-                val currentPitch = player.pitch
+    private fun debug(message: String) {
+        if (debugActive && message != lastDebugMessage) {
+            println("[AimAssist] $message")
+            UChat.mChat("[AimAssist] $message")
+            lastDebugMessage = message
+        }
+    }
 
-                // Calculate maximum rotation change per step
-                val maxYawChange = (0.75f * (1f - smoothing / 1.1f)) / 2.5f
-                val maxPitchChange = (0.3f * (1f - smoothing / 1.1f)) / 2.5f
+    fun getTargetName(): String {
+        return when (target) {
+            null -> ""
+            is PlayerEntity -> target!!.name.toString()
+            else -> "Crystal"
+        }
+    }
 
-                // Calculate needed rotation changes
-                val yawDiff = wrap(targetRot.yaw - currentYaw)
-                val pitchDiff = wrap(targetRot.pitch - currentPitch)
+    companion object {
+        private var INSTANCE: AimAssist? = null
 
-                // Add vertical precision check
-                // Only rotate horizontally if vertical aim is very close to target
-                val shouldRotateHorizontally = abs(pitchDiff) < 5f
-
-                // Limit rotation change
-                val adjustedYawChange = if (shouldRotateHorizontally) {
-                    when {
-                        abs(yawDiff) <= maxYawChange -> yawDiff
-                        yawDiff > 0 -> maxYawChange
-                        else -> -maxYawChange
-                    }
-                } else {
-                    0f
-                }
-
-                val adjustedPitchChange = when {
-                    abs(pitchDiff) <= maxPitchChange -> pitchDiff
-                    pitchDiff > 0 -> maxPitchChange
-                    else -> -maxPitchChange
-                }
-
-                // Apply rotation
-                player.yaw = currentYaw + adjustedYawChange
-                player.pitch = MathHelper.clamp(currentPitch + adjustedPitchChange, -90f, 90f)
-
-                // Check if we're close enough to the target rotation
-                if (abs(yawDiff) <= 0.1f && abs(pitchDiff) <= 0.1f) {
-                    // Directly set to target if very close
-                    player.yaw = targetRot.yaw
-                    player.pitch = targetRot.pitch
-                    resetRotation()
-                    return@launch // Stop early if we're at the target
-                }
-
-                delay(1L) // Wait 1ms before next step
+        fun init(eventBus: EventBus) {
+            if (INSTANCE == null) {
+                INSTANCE = AimAssist(eventBus)
             }
         }
-    }
 
-
-    /**
-     * Apply interpolated rotation each tick
-     */
-    private fun updateRotation() {
-        // This method is now a no-op as rotation is handled directly in smoothRotate
-    }
-
-    /**
-     * Reset rotation tracking
-     */
-    private fun resetRotation() {
-        targetRotation = null
-        currentRotation = null
-    }
-
-    /**
-     * Simple timer utility
-     */
-    class TimerUtil {
-        private var lastMs = System.currentTimeMillis()
-
-        fun reset() {
-            lastMs = System.currentTimeMillis()
-        }
-
-        fun delay(ms: Float): Boolean {
-            return System.currentTimeMillis() - lastMs > ms
+        fun getInstance(): AimAssist {
+            return INSTANCE ?: throw IllegalStateException("AimAssist not initialized. Call init() first.")
         }
     }
-
-    /**
-     * Simple rotation class
-     */
-    class Rotation(var yaw: Float, var pitch: Float)
 }

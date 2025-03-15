@@ -3,6 +3,9 @@ package com.dov.cm
 import net.fabricmc.api.ClientModInitializer
 import com.dov.cm.commands.CommandHandler
 import com.dov.cm.config.Config
+import com.dov.cm.event.EventBus
+import com.dov.cm.event.EventListener
+import com.dov.cm.event.Render2DEvent
 import com.dov.cm.modules.combat.*
 import com.dov.cm.modules.render.*
 import com.dov.cm.modules.combat.EnhancedHitbox
@@ -23,6 +26,7 @@ import net.minecraft.sound.SoundCategory
 object CmKtClient : ClientModInitializer {
     override fun onInitializeClient() {
         val maceDive = MaceDive()
+        val eventBus = EventBus()
         println("CmKtClient initialized!")  // Debugging log
         CommandHandler.onInitializeClient() // Ensure CommandHandler is loaded
         TargetHUD().onInitializeClient() // Register TargetHUD
@@ -34,13 +38,21 @@ object CmKtClient : ClientModInitializer {
         NoJumpDelay.init()
         FullBright.init()
         ToggleSprint.init()
-        AimAssist.init()
         Backtrack.init()
         Triggerbot.init()
         WebServerManager.init()
         KillAura.init()
         PlayerESP.init()
         NametagRenderer.init()
+        AimAssist.init(eventBus)
+
+        // In your main class or initialization code
+        eventBus.registerListener(object {
+            @EventListener
+            fun testEvent(event: Render2DEvent) {
+                println("Test event received!")
+            }
+        })
 
 
 
