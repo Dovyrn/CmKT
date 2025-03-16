@@ -32,7 +32,6 @@ object CmKtClient : ClientModInitializer {
         CommandHandler.onInitializeClient()
         TargetHUD().onInitializeClient()
         maceDive.init()
-        EnhancedHitbox.init()
         GlowESP.init()
         WeaponSwapper.init()
         StorageESP.init()

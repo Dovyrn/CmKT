@@ -7,7 +7,10 @@
   "client": [
     "LogicalZoomMixin",
     "ClientPlayerInteractionManagerMixin",
-    "ClientPlayNetworkHandlerMixin"
+    "ClientPlayNetworkHandlerMixin",
+    "GameRendererMixin",
+    "EntityRenderDispatcherMixin",
+    "MixinEntity"
   ],
   "injectors": {
     "defaultRequire": 1

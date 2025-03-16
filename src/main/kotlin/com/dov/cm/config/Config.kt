@@ -232,7 +232,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         description = "Players/All entites",
         category = "Combat",
         subcategory = "Hitbox",
-        options = ["Players", "All Entites"]
+        options = ["Players", "Crystals"]
     )
     var hitboxTargets: Int = 1
 

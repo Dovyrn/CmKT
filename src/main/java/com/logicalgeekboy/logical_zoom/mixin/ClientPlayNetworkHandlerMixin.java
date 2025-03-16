@@ -2,9 +2,6 @@ package com.logicalgeekboy.logical_zoom.mixin;
 
 import com.dov.cm.modules.combat.Backtrack;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import org.spongepowered.asm.mixin.Mixin;

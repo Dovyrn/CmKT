@@ -16,6 +16,7 @@ public class RotationUtil implements MC {
 
     public static RotationUtil INSTANCE = new RotationUtil();
 
+
     public Rotation getNeededRotations(float f, float f2, float f3, float f4, float f5, float f6) {
         double d = f - f4;
         double d2 = f2 - f5;
@@ -53,8 +54,27 @@ public class RotationUtil implements MC {
     }
 
     public boolean setPitch(Rotation rotation, float f, float f2, float f3) {
-        setRotation(new Rotation(getMc().player.getYaw(), MathUtil.interpolate(getMc().player.getPitch(), rotation.getPitch() + f2 / 2, skid.Companion.getRenderManager().getMs() * (1.1f - f) * 5 / f3 * RandomUtil.INSTANCE.randomInRange(0.5f, 1))));
-        return getMc().player.getPitch() - 5 < rotation.getPitch() && getMc().player.getPitch() + 5 > rotation.getPitch();
+
+
+        float msValue = skid.Companion.getRenderManager().getMs();
+        float randomFactor = RandomUtil.INSTANCE.randomInRange(0.5f, 1);
+        float interpolationFactor = msValue * (1.1f - f) * 5 / f3 * randomFactor;
+
+
+
+        setRotation(new Rotation(getMc().player.getYaw(),
+                MathUtil.interpolate(
+                        getMc().player.getPitch(),
+                        rotation.getPitch() + f2 / 2,
+                        interpolationFactor
+                )
+        ));
+
+
+        boolean success = getMc().player.getPitch() - 5 < rotation.getPitch() && getMc().player.getPitch() + 5 > rotation.getPitch();
+
+
+        return success;
     }
 
     Vec3d getPlayerLookVec(PlayerEntity playerEntity) {
@@ -67,6 +87,7 @@ public class RotationUtil implements MC {
     public void setRotation(Rotation rotation) {
         getMc().player.setYaw(rotation.getYaw());
         getMc().player.setPitch(rotation.getPitch());
+
     }
 
     public BlockHitResult blockRaycast(BlockPos blockPos, PlayerEntity playerEntity) {
@@ -92,18 +113,68 @@ public class RotationUtil implements MC {
         return this.getNeededRotations((float)vec3d.x, (float)vec3d.y, (float)vec3d.z);
     }
 
-    public boolean setYaw(Rotation rotation, float f, float f2, float f3) {
-        float f4 = MathUtil.interpolate(getMc().player.getYaw(), rotation.getYaw() + f2 / 2, skid.Companion.getRenderManager().getMs() * (1.1f - f) * 5 / f3 * RandomUtil.INSTANCE.randomInRange(0.5f, 1));
-        float f5 = MathUtil.interpolate(getMc().player.getPitch(), rotation.getPitch() + f2 / 2, skid.Companion.getRenderManager().getMs() * (1.1f - f) * 5 / f3 * RandomUtil.INSTANCE.randomInRange(0.5f, 1));
-        setRotation(new Rotation(f4, f5));
-        return getMc().player.getYaw() - 5 < rotation.getYaw() && getMc().player.getYaw() + 5 > rotation.getYaw();
+    // The problem is likely in this method - let's fix it for yaw-only rotation
+    public boolean setYaw(Rotation rotation, float smoothing, float randomValue, float divider) {
+
+        float msValue = skid.Companion.getRenderManager().getMs();
+
+        float randomFactor = RandomUtil.INSTANCE.randomInRange(0.5f, 1);
+        float interpolationFactor = msValue * (1.1f - smoothing) * 5 / divider * randomFactor;
+
+        // Ensure we have at least some minimal movement
+        if (interpolationFactor < 0.01f) {
+            interpolationFactor = 0.01f;
+        }
+
+
+        // Get original yaw
+        float originalYaw = getMc().player.getYaw();
+
+        // FIXED: Only change yaw, not pitch - keep current pitch
+        float newYaw = MathUtil.interpolate(
+                getMc().player.getYaw(),
+                rotation.getYaw() + randomValue / 2,
+                interpolationFactor
+        );
+
+
+
+        // Only update yaw, keep the pitch the same
+        setRotation(new Rotation(newYaw, getMc().player.getPitch()));
+
+        // Check if we made any progress (any movement is success)
+        float movement = Math.abs(getMc().player.getYaw() - originalYaw);
+        boolean madeProgress = movement > 0.01f;
+
+        // Check if we're close enough to target (within 5 degrees)
+        boolean reachedTarget = Math.abs(getMc().player.getYaw() - rotation.getYaw()) < 5;
+
+
+
+        // Consider it a success if we either made progress or reached the target
+        return madeProgress || reachedTarget;
     }
 
     public boolean setRotation(Rotation rotation, float f, float f2, float f3) {
-        float f4 = MathUtil.interpolate(getMc().player.getYaw(), rotation.getYaw() + f2, skid.Companion.getRenderManager().getMs() * (1.1f - f) * 5 / f3 * RandomUtil.INSTANCE.randomInRange(0.5f, 1));
-        float f5 = MathUtil.interpolate(getMc().player.getPitch(), rotation.getPitch() + f2 / 2, skid.Companion.getRenderManager().getMs() * (1.1f - f) * 5 / f3 * RandomUtil.INSTANCE.randomInRange(0.5f, 1));
+
+
+        float msValue = skid.Companion.getRenderManager().getMs();
+        float randomFactor = RandomUtil.INSTANCE.randomInRange(0.5f, 1);
+        float interpolationFactor = msValue * (1.1f - f) * 5 / f3 * randomFactor;
+
+
+        float f4 = MathUtil.interpolate(getMc().player.getYaw(), rotation.getYaw() + f2, interpolationFactor);
+        float f5 = MathUtil.interpolate(getMc().player.getPitch(), rotation.getPitch() + f2 / 2, interpolationFactor);
+
+
         setRotation(new Rotation(f4, f5));
-        return getMc().player.getYaw() - 5 < rotation.getYaw() && getMc().player.getYaw() + 5 > rotation.getYaw() && getMc().player.getPitch() - 5 < rotation.getPitch() && getMc().player.getPitch() + 5 > rotation.getPitch();
+
+        boolean success = Math.abs(getMc().player.getYaw() - rotation.getYaw()) < 5 &&
+                Math.abs(getMc().player.getPitch() - rotation.getPitch()) < 5;
+
+
+
+        return success;
     }
 
     public boolean inRange(Rotation rotation, Rotation rotation2, float f) {

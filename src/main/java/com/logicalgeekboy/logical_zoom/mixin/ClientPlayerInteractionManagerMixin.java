@@ -1,6 +1,7 @@
 package com.logicalgeekboy.logical_zoom.mixin;
 
 import com.dov.cm.modules.combat.WeaponSwapper;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
