@@ -16,6 +16,32 @@ class Rotation(val pitch: Float, val yaw: Float) {
         val newYaw = -MathHelper.wrapDegrees(yaw) * radiansPerDegree - pi
         val cosYaw = MathHelper.cos(newYaw)
         val sinYaw = MathHelper.sin(newYaw)
-        return Vec3d(sinYaw * cosPitch.toDouble(), sinPitch.toDouble(), cosYaw * cosPitch.toDouble())
+
+        return Vec3d(
+            sinYaw * cosPitch.toDouble(),
+            sinPitch.toDouble(),
+            cosYaw * cosPitch.toDouble()
+        )
+    }
+
+    // Optional: Override equals and hashCode for proper comparison
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Rotation
+
+        return pitch == other.pitch && yaw == other.yaw
+    }
+
+    override fun hashCode(): Int {
+        var result = pitch.hashCode()
+        result = 31 * result + yaw.hashCode()
+        return result
+    }
+
+    // Optional: toString for easier debugging
+    override fun toString(): String {
+        return "Rotation(pitch=$pitch, yaw=$yaw)"
     }
 }

@@ -1,35 +1,36 @@
 package com.dov.cm
 
-import net.fabricmc.api.ClientModInitializer
 import com.dov.cm.commands.CommandHandler
 import com.dov.cm.config.Config
-import com.dov.cm.event.EventBus
-import com.dov.cm.event.EventListener
-import com.dov.cm.event.Render2DEvent
+
+import com.dov.cm.modules.ModuleManager
 import com.dov.cm.modules.combat.*
 import com.dov.cm.modules.render.*
-import com.dov.cm.modules.combat.EnhancedHitbox
-import com.dov.cm.modules.render.GlowESP
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.util.InputUtil
-import com.dov.cm.modules.render.StorageESP
 import com.dov.cm.modules.utilities.FullBright
 import com.dov.cm.modules.utilities.NoJumpDelay
 import com.dov.cm.modules.utilities.ToggleSprint
 import com.dov.cm.util.ModSounds
 import com.dov.cm.web.WebServerManager
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.sound.Sound
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.sound.SoundCategory
+import com.logicalgeekboy.logical_zoom.java_event.EventBus
+import com.logicalgeekboy.logical_zoom.java_modules.AimAssist
+import net.fabricmc.api.ClientModInitializer
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.client.util.InputUtil
 
 object CmKtClient : ClientModInitializer {
+    // Make the eventBus accessible
+    val eventBus = EventBus()
+
+
+
     override fun onInitializeClient() {
         val maceDive = MaceDive()
-        val eventBus = EventBus()
-        println("CmKtClient initialized!")  // Debugging log
-        CommandHandler.onInitializeClient() // Ensure CommandHandler is loaded
-        TargetHUD().onInitializeClient() // Register TargetHUD
+        println("CmKtClient initialized with EventBus: $eventBus")
+
+        val moduleManager = ModuleManager()
+
+        CommandHandler.onInitializeClient()
+        TargetHUD().onInitializeClient()
         maceDive.init()
         EnhancedHitbox.init()
         GlowESP.init()
@@ -44,16 +45,8 @@ object CmKtClient : ClientModInitializer {
         KillAura.init()
         PlayerESP.init()
         NametagRenderer.init()
-        AimAssist.init(eventBus)
 
-        // In your main class or initialization code
-        eventBus.registerListener(object {
-            @EventListener
-            fun testEvent(event: Render2DEvent) {
-                println("Test event received!")
-            }
-        })
-
+        moduleManager.initModules()
 
 
         // Register a tick event to check key presses
@@ -66,5 +59,9 @@ object CmKtClient : ClientModInitializer {
                 }
             }
         }
+
+
+
+        ModSounds.registerSounds()
     }
 }
