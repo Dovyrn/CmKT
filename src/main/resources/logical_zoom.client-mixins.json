@@ -5,11 +5,10 @@
   "mixins": [
   ],
   "client": [
-    "LogicalZoomMixin",
     "ClientPlayerInteractionManagerMixin",
     "ClientPlayNetworkHandlerMixin",
     "GameRendererMixin",
-    "EntityRenderDispatcherMixin",
+    "LogicalZoomMixin",
     "MixinEntity"
   ],
   "injectors": {

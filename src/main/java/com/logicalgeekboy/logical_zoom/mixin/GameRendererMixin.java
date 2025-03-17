@@ -17,13 +17,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
 
-
+    private static boolean firstRun = true;
+    private static int frameCounter = 0;
+    private static final int LOG_INTERVAL = 300; // Log every 300 frames
 
     @Inject(method = "render", at = @At("RETURN"))
     private void onRender(RenderTickCounter tickCounter, boolean tick, CallbackInfo ci) {
         MinecraftClient client = MinecraftClient.getInstance();
 
-
+        // Track frames for logging
+        frameCounter++;
 
         // Only dispatch event if a world is loaded and we're not in a screen
         if (client.world != null) {
@@ -34,13 +37,31 @@ public class GameRendererMixin {
                     client.getWindow().getScaledHeight()
             );
 
+            // First run or periodic logging
+            if (firstRun || frameCounter % LOG_INTERVAL == 0) {
 
+                // Compare the two EventBus instances
+                EventBus cmEventBus = CmKtClient.INSTANCE.getEventBus();
+                EventBus skidEventBus = skid.Companion.getEventBus();
+
+
+
+                firstRun = false;
+            }
 
             // IMPORTANT FIX: Use skid.Companion.getEventBus() instead of CmKtClient.INSTANCE.getEventBus()
             // This ensures we use the same EventBus where modules are registered
             EventBus eventBus = skid.Companion.getEventBus();
 
+            if (eventBus != null) {
+                if (frameCounter % LOG_INTERVAL == 0) {
+                }
+                boolean cancelled = eventBus.invoke(event);
 
+                if (frameCounter % LOG_INTERVAL == 0) {
+                }
+            } else {
+            }
         }
     }
 }

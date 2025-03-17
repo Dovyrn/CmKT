@@ -6,6 +6,7 @@ import com.dov.cm.config.Config
 import com.dov.cm.modules.ModuleManager
 import com.dov.cm.modules.combat.*
 import com.dov.cm.modules.render.*
+import com.dov.cm.modules.utilities.AntiSylphie
 import com.dov.cm.modules.utilities.FullBright
 import com.dov.cm.modules.utilities.NoJumpDelay
 import com.dov.cm.modules.utilities.ToggleSprint
@@ -47,9 +48,10 @@ object CmKtClient : ClientModInitializer {
 
         moduleManager.initModules()
 
-
+        AntiSylphie.init()
         // Register a tick event to check key presses
         ClientTickEvents.END_CLIENT_TICK.register { client ->
+            moduleManager.updateModuleRegistrations()
             // This is a simplified approach - you'll need to adapt to your needs
             if (client.player != null && Config.maceDiveEnabled && Config.maceDiveKey.isNotEmpty()) {
                 val keyCode = Config.maceDiveKey[0].uppercaseChar().code

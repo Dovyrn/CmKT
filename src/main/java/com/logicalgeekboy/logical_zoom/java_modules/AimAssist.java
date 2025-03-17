@@ -4,6 +4,7 @@ import com.dov.cm.config.Config;
 import com.dov.cm.util.TimerUtil;
 import com.logicalgeekboy.logical_zoom.java_event.EventListener;
 import com.logicalgeekboy.logical_zoom.java_event.impl.Render2DEvent;
+import com.logicalgeekboy.logical_zoom.java_event.impl.TickEvent;
 import com.logicalgeekboy.logical_zoom.java_util.impl.RandomUtil;
 import com.logicalgeekboy.logical_zoom.java_util.impl.Rotation;
 import com.logicalgeekboy.logical_zoom.java_util.impl.RotationUtil;
@@ -48,8 +49,11 @@ public class AimAssist {
         visibleTimer = new TimerUtil();
     }
 
-    @EventListener
-    public void event(Render2DEvent event) {
+    /**
+     * Read configuration values from Config
+     * This ensures we always have the latest settings
+     */
+    private void updateConfig() {
         targetCrystal = config.getAimAssistTargetCrystals();
         targetPlayer = config.getAimAssistTargetPlayers();
         mode = config.getAimAssistMode();
@@ -61,11 +65,30 @@ public class AimAssist {
         hitbox = config.getAimAssistHitbox();
         weaponOnly = config.getAimAssistWeaponOnly();
         oneTarget = config.getAimAssistStickyTarget();
+    }
 
-        if (getMc().currentScreen != null || !getMc().isWindowFocused()) {
+    // Listen for both Render2D and Tick events to ensure we can still aim if rendering logic changes
+    @EventListener
+    public void event(Render2DEvent event) {
+        processAimAssist();
+    }
+
+    @EventListener
+    public void onTick(TickEvent event) {
+        // This acts as a backup if Render2DEvent isn't firing correctly
+        processAimAssist();
+    }
+
+    private void processAimAssist() {
+        // Update configuration on each frame
+        updateConfig();
+
+        // Skip if in GUI or window not focused
+        if (getMc().currentScreen != null || !getMc().isWindowFocused() || getMc().player == null || getMc().world == null) {
             return;
         }
 
+        // Skip if already targeting an entity
         if (getMc().crosshairTarget != null) {
             HitResult hitResult = getMc().crosshairTarget;
             if (hitResult.getType() == HitResult.Type.ENTITY) {
@@ -73,6 +96,7 @@ public class AimAssist {
             }
         }
 
+        // Skip if weapon check enabled and not holding appropriate weapon
         if (weaponOnly) {
             if (!(getMc().player.getMainHandStack().getItem() instanceof SwordItem) &&
                     !(getMc().player.getMainHandStack().getItem() instanceof AxeItem)) {
@@ -82,6 +106,7 @@ public class AimAssist {
 
         Rotation rotation = new Rotation(getMc().player.getYaw(), getMc().player.getPitch());
 
+        // Validate existing target
         if (target != null) {
             if (!target.isAlive() || target.isRemoved() || target.getWorld() != getMc().world) {
                 target = null;
@@ -108,6 +133,7 @@ public class AimAssist {
             }
         }
 
+        // Find new target if needed
         if (!oneTarget || target == null) {
             target = getTarget(rotation);
         }
@@ -120,15 +146,28 @@ public class AimAssist {
         Vec3d vec3d = target.getEyePos();
         double d = vec3d.y - getHeight(target.getHeight());
 
-        BlockHitResult raycast = getMc().world.raycast(
-                new RaycastContext(
-                        getMc().player.getCameraPosVec(getMc().getRenderTickCounter().getTickDelta(true)),
-                        new Vec3d(vec3d.x, d, vec3d.z),
-                        RaycastContext.ShapeType.OUTLINE,
-                        RaycastContext.FluidHandling.ANY,
-                        getMc().player
-                )
-        );
+        // Check if target is obscured by blocks
+        RaycastContext context = null;
+        try {
+            context = new RaycastContext(
+                    getMc().player.getCameraPosVec(getMc().getRenderTickCounter().getTickDelta(true)),
+                    new Vec3d(vec3d.x, d, vec3d.z),
+                    RaycastContext.ShapeType.OUTLINE,
+                    RaycastContext.FluidHandling.ANY,
+                    getMc().player
+            );
+        } catch (Exception e) {
+            // Fallback if the render tick counter method has changed
+            context = new RaycastContext(
+                    getMc().player.getEyePos(),
+                    new Vec3d(vec3d.x, d, vec3d.z),
+                    RaycastContext.ShapeType.OUTLINE,
+                    RaycastContext.FluidHandling.ANY,
+                    getMc().player
+            );
+        }
+
+        BlockHitResult raycast = getMc().world.raycast(context);
 
         if (raycast.getType() == HitResult.Type.BLOCK) {
             visibleTimer.reset();

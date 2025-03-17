@@ -3,7 +3,7 @@ package com.dov.cm.modules
 import com.logicalgeekboy.logical_zoom.skid
 import com.logicalgeekboy.logical_zoom.java_modules.AimAssist
 import com.dov.cm.config.Config
-import com.logicalgeekboy.logical_zoom.java_modules.Hitboxes
+import com.logicalgeekboy.logical_zoom.java_modules.PotionRefill
 
 class ModuleManager {
     fun registerModule(moduleClass: Any, enabled: Boolean) {
@@ -15,39 +15,41 @@ class ModuleManager {
         }
     }
     val aimAssist = AimAssist()
-    val hitbox = Hitboxes()
+    val potRefill = PotionRefill()
     private var aimAssistRegistered = false
-    private var hitboxRegistered = false
+    private var potRefillRegistered = false
     fun initModules() {
 
 
         val aimAssistEnabled = Config.aimAssistEnabled
-        val hitboxEnabled = Config.HitboxEnabled
+        val potRefillEnabled = Config.potRefill
+
 
 
 
 
 
         // Register the module
-        registerModule(hitbox, hitboxEnabled)
         registerModule(aimAssist, aimAssistEnabled)
+        registerModule(potRefill, potRefillEnabled)
 
         // Verify registration by checking event bus listeners
         val eventBus = skid.Companion.getEventBus()
     }
     fun updateModuleRegistrations() {
         val aimAssistEnabled = Config.aimAssistEnabled
-        val hitboxEnabled = Config.HitboxEnabled
+        val potRefillEnabled = Config.potRefill
 
         // Only register/unregister if status has changed
         if (aimAssistEnabled != aimAssistRegistered) {
             registerModule(aimAssist, aimAssistEnabled)
             aimAssistRegistered = aimAssistEnabled
         }
-
-        if (hitboxEnabled != hitboxRegistered) {
-            registerModule(hitbox, hitboxEnabled)
-            hitboxRegistered = hitboxEnabled
+        if (potRefillEnabled != aimAssistRegistered){
+            registerModule(potRefill, potRefillEnabled)
+            aimAssistRegistered = aimAssistEnabled
         }
+
+
     }
 }

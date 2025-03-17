@@ -34,7 +34,7 @@ object FullBright {
 
             // Apply night vision effect client-side only
             // Duration is set to 16 seconds (320 ticks) with amplifier 0
-            // ShowParticles is set to false to avoid particle effects
+            // ShowParticles is set to false, to avoid particle effects
             player.addStatusEffect(StatusEffectInstance(StatusEffects.NIGHT_VISION, 320, 0, false, false, true))
         } else if (isActive) {
             // Remove the effect when module is disabled

@@ -52,15 +52,6 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     var offsetY: Int = 0
 
     @Property(
-        type = PropertyType.SWITCH,
-        name = "Show Player Head",
-        description = "Display the target's head in the HUD",
-        category = "Render",
-        subcategory = "TargetHUD"
-    )
-    var showHead: Boolean = true
-
-    @Property(
         type = PropertyType.PERCENT_SLIDER,
         name = "Background Opacity",
         description = "Adjust the transparency of the TargetHUD background",
@@ -154,87 +145,19 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var maxHeight: Int = 10
 
-    // MACE D-TAP
 
-    @Property(
-        PropertyType.SWITCH,
-        name = "Mace D-Tap",
-        description = "Uses 2 sets of weapons to D-Tap",
-        category = "Combat",
-        subcategory = "Mace D-Tap"
-    )
-    var maceDTap: Boolean = false
 
-    @Property(
-        PropertyType.SWITCH,
-        name = "Axe Priority",
-        description = "If the target is holding a shield, Ignores the first weapon and instead uses an Axe",
-        category = "Combat",
-        subcategory = "Mace D-Tap"
-    )
-    var axePriority: Boolean = true
 
-    @Property(
-        PropertyType.SELECTOR,
-        name = "First weapon",
-        description = "The first weapon to attack with",
-        options = ["Sword", "Axe", "Mace"],
-        category = "Combat",
-        subcategory = "Mace D-Tap"
 
-    )
-    var maceFirstWeapon: Int = 2
-
-    @Property(
-        PropertyType.SELECTOR,
-        name = "Second weapon",
-        description = "The first weapon to attack with",
-        options = ["Sword", "Axe", "Mace"],
-        category = "Combat",
-        subcategory = "Mace D-Tap"
-
-    )
-    var maceSecondWeapon: Int = 2
-
-    @Property(
-        PropertyType.SWITCH,
-        name = "Switch Only",
-        description = "Instead of trying to perform a D-Tap. Only switches for the property bug",
-        category = "Combat",
-        subcategory = "Mace D-Tap"
-    )
-    var switchOnly: Boolean = false
-
-    // Hitbox settings
     @Property(
         type = PropertyType.SWITCH,
-        name = "Hitbox",
-        description = "Expands hitbox of players",
-        category = "Combat",
-        subcategory = "Hitbox"
+        name = "Pot refill",
+        description = "Fill yours inventory with health pots",
+        category = "Utilities"
     )
-    var HitboxEnabled: Boolean = false
+    var potRefill: Boolean = true
 
-    @Property(
-        type = PropertyType.DECIMAL_SLIDER,
-        name = "Expand",
-        decimalPlaces = 1,
-        description = "How much to expand the Hitbox",
-        category = "Combat",
-        subcategory = "Hitbox",
-        minF = 0F,
-        maxF = 1F
-    )
-    var hitboxExpand: Float = 0.1F
-    @Property(
-        type = PropertyType.SELECTOR,
-        name = "Targets",
-        description = "Players/All entites",
-        category = "Combat",
-        subcategory = "Hitbox",
-        options = ["Players", "Crystals"]
-    )
-    var hitboxTargets: Int = 1
+
 
 
 
@@ -274,14 +197,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var espTracerEnabled: Boolean = true
 
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Show Self",
-        description = "Renders yourself",
-        category = "Render",
-        subcategory = "Esp"
-    )
-    var espShowSelf: Boolean = true
+
 
     @Property(
         type = PropertyType.SWITCH,
@@ -549,14 +465,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var aimAssistMode: Int = 0
 
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Stop on Edge",
-        description = "Stops rotating as soon as it reaches the hitbox",
-        category = "Combat",
-        subcategory = "Aim Assist"
-    )
-    var stopOnEdge: Boolean = false
+
 
     @Property(
         type = PropertyType.SLIDER,
@@ -581,14 +490,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var aimAssistSmoothing: Float = 1F
 
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Insta Target",
-        description = "Auto locks on ",
-        category = "Combat",
-        subcategory = "Aim Assist",
-    )
-    var aimAssistInstantTarget: Boolean = false
+
 
     @Property(
         type = PropertyType.SLIDER,
@@ -671,14 +573,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
     )
     var aimAssistTargetCrystals: Boolean = false
 
-    @Property(
-        type = PropertyType.SWITCH,
-        name = "Target Entities",
-        description = "Target all living entities",
-        category = "Combat",
-        subcategory = "Aim Assist Targets"
-    )
-    var aimAssistTargetEntities: Boolean = false
+
 
     // Backtrack Settings
     @Property(
@@ -951,8 +846,6 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("aimAssistStickyTarget", "aimAssistEnabled")
         addDependency("aimAssistTargetPlayers", "aimAssistEnabled")
         addDependency("aimAssistTargetCrystals", "aimAssistEnabled")
-        addDependency("aimAssistTargetEntities", "aimAssistEnabled")
-        addDependency("stopOnEdge","aimAssistEnabled")
 
 
         setSubcategoryDescription(
@@ -990,7 +883,6 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("animations", "targetHudToggled")
         addDependency("offsetX", "targetHudToggled")
         addDependency("offsetY", "targetHudToggled")
-        addDependency("showHead", "targetHudToggled")
         addDependency("background", "targetHudToggled")
 
 
@@ -1005,13 +897,10 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         addDependency("boostStrength", "maceDiveEnabled")
         addDependency("maxHeight", "maceDiveEnabled")
 
-        // Hitbox dependencies
-        addDependency("hitboxExpand", "HitboxEnabled")
-        addDependency("hitboxTargets", "HitboxEnabled")
+
 
         // ESP Dependencies
         addDependency("espRenderPlayers", "espEnabled")
-        addDependency("espPlayerColor", "espEnabled")
 
         // Add this subcategory description in the init block
         setSubcategoryDescription(
@@ -1035,10 +924,7 @@ object Config : Vigilant(File("./config/CmKt/config.toml")) {
         )
 
         // Mace D-Tap dependencies
-        addDependency("axePriority","maceDTap")
-        addDependency("maceFirstWeapon","maceDTap")
-        addDependency("maceSecondWeapon","maceDTap")
-        addDependency("switchOnly","maceDTap")
+
 
         setSubcategoryDescription(
             "Combat",

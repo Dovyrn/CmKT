@@ -1,6 +1,5 @@
 package com.logicalgeekboy.logical_zoom.java_event.impl;
 
-
 import com.logicalgeekboy.logical_zoom.java_event.Event;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Box;
@@ -24,5 +23,8 @@ public class HitboxEvent extends Event {
 
     public void setBox(Box box) {
         this.box = box;
+        // IMPORTANT: When we set the box, we're modifying the hitbox
+        // so we need to mark the event as cancelled to indicate it was handled
+        this.cancelled = true;
     }
 }

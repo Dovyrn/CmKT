@@ -12,7 +12,6 @@ import net.minecraft.item.Items;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.screen.slot.SlotActionType;
 import com.logicalgeekboy.logical_zoom.java_util.MC;
-
 import java.util.ArrayList;
 
 public class InventoryUtil implements MC {
@@ -46,18 +45,46 @@ public class InventoryUtil implements MC {
         return null;
     }
 
-    public Integer findPotion(int n, int n2, StatusEffect statusEffect) {
-        for (int i = n; i < n2; i++) {
+    public Integer findPotion(int startSlot, int endSlot, boolean healthPotion) {
+        for (int i = startSlot; i < endSlot; i++) {
             ItemStack itemStack = getMc().player.getInventory().getStack(i);
-            if (itemStack.getItem() == Items.SPLASH_POTION && (statusEffect == null || hasStatusEffect(itemStack, statusEffect))) {
+
+            // Skip if not a splash potion
+            if (itemStack.getItem() != Items.SPLASH_POTION) {
+                continue;
+            }
+
+            // If not looking for health potions specifically, return any splash potion
+            if (!healthPotion) {
                 return i;
             }
+
+            // Get the potion contents component
+            PotionContentsComponent contents = itemStack.getOrDefault(
+                    DataComponentTypes.POTION_CONTENTS,
+                    PotionContentsComponent.DEFAULT
+            );
+
+            // Check each effect for instant health
+            for (StatusEffectInstance effect : contents.getEffects()) {
+                String effectString = effect.getEffectType().toString();
+
+                // Check if this is an instant health effect based on the reference string
+                if (effectString.contains("minecraft:instant_health")) {
+                    return i;
+                }
+            }
         }
+
         return null;
     }
 
-    public boolean hasStatusEffect(ItemStack itemStack, StatusEffect statusEffect) {
-        PotionContentsComponent potionContents = itemStack.getOrDefault(DataComponentTypes.POTION_CONTENTS, PotionContentsComponent.DEFAULT);
+
+    private boolean hasStatusEffect(ItemStack itemStack, StatusEffect statusEffect) {
+        PotionContentsComponent potionContents = itemStack.getOrDefault(
+                DataComponentTypes.POTION_CONTENTS,
+                PotionContentsComponent.DEFAULT
+        );
 
         for (StatusEffectInstance effectInstance : potionContents.getEffects()) {
             if (effectInstance.getEffectType() == statusEffect) {

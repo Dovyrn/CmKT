@@ -70,10 +70,8 @@ class WebServerManager(port: Int = 8080) : NanoHTTPD(port) {
             "maceDiveEnabled","maceDiveKey", "groundDetectionHeight",
             "attackMode", "autoEquipElytra", "autoSwapChestplate", "boostStrength", "maxHeight"
         ),
-        "hitbox" to listOf("HitboxEnabled", "hitboxExpand", "hitboxTargets"),
         "weaponSwapper" to listOf("weaponSwapper", "firstWeapon", "secondWeapon", "weaponSwapBack"),
-        "maceDTap" to listOf("maceDTap", "axePriority", "maceFirstWeapon", "maceSecondWeapon", "switchOnly"),
-        "esp" to listOf("espEnabled", "espRenderPlayers", "espPlayerColor"),
+        "esp" to listOf("espEnabled", "espRenderPlayers"),
         "chams" to listOf("chamsEnabled"),
         "storageEsp" to listOf(
             "storageEspEnabled", "storageEspOpacity", "storageEspTracers",
@@ -82,10 +80,9 @@ class WebServerManager(port: Int = 8080) : NanoHTTPD(port) {
             "furnaceEspEnabled", "furnaceEspColor", "shulkerEspEnabled", "shulkerEspColor"
         ),
         "targetHud" to listOf(
-            "targetHudToggled", "animations", "offsetX", "offsetY",
-            "showHead", "background"
+            "targetHudToggled", "animations", "offsetX", "offsetY", "background"
         ),
-        "utilities" to listOf("sprint", "noJumpDelay", "fullBright"),
+        "utilities" to listOf("sprint", "noJumpDelay", "fullBright", "potRefill"),
         "developer" to listOf("developerMode", "debugMessages"),
         // New modules from Config.kt
         "triggerbot" to listOf(
@@ -98,9 +95,7 @@ class WebServerManager(port: Int = 8080) : NanoHTTPD(port) {
         "aimAssist" to ModuleInfo("Aim Assist", "Targeting enhancement", "fas fa-crosshairs", "combat"),
         "backtrack" to ModuleInfo("Backtrack", "Delay movement packets", "fas fa-history", "combat"),
         "maceDive" to ModuleInfo("Mace Dive", "Aerial dive attacks", "fas fa-bomb", "combat"),
-        "hitbox" to ModuleInfo("Hitbox", "Expand entity hitboxes", "fas fa-expand", "combat"),
         "weaponSwapper" to ModuleInfo("Weapon Swapper", "Automatic weapon switching", "fas fa-exchange-alt", "combat"),
-        "maceDTap" to ModuleInfo("Mace D-Tap", "Two-hit attack combo", "fas fa-bolt", "combat"),
         "esp" to ModuleInfo("ESP", "Entity wallhacks", "fas fa-eye", "render"),
         "chams" to ModuleInfo("Chams", "Entity highlighting", "fas fa-user", "render"),
         "storageEsp" to ModuleInfo("Storage ESP", "Find containers", "fas fa-box", "render"),

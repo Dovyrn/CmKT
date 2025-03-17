@@ -13,9 +13,14 @@ import net.minecraft.world.RaycastContext;
 import com.logicalgeekboy.logical_zoom.skid;
 
 public class RotationUtil implements MC {
-
+    private static boolean DEBUG = true;
     public static RotationUtil INSTANCE = new RotationUtil();
 
+    private static void debug(String message) {
+        if (DEBUG) {
+            System.out.println("[MathUtil Debug] " + message);
+        }
+    }
 
     public Rotation getNeededRotations(float f, float f2, float f3, float f4, float f5, float f6) {
         double d = f - f4;
@@ -113,10 +118,14 @@ public class RotationUtil implements MC {
         return this.getNeededRotations((float)vec3d.x, (float)vec3d.y, (float)vec3d.z);
     }
 
-    // The problem is likely in this method - let's fix it for yaw-only rotation
     public boolean setYaw(Rotation rotation, float smoothing, float randomValue, float divider) {
+        debug("setYaw called: targetYaw=" + rotation.getYaw() +
+                ", currentYaw=" + getMc().player.getYaw() +
+                ", difference=" + Math.abs(rotation.getYaw() - getMc().player.getYaw()) +
+                ", smoothing=" + smoothing + ", random=" + randomValue + ", divider=" + divider);
 
         float msValue = skid.Companion.getRenderManager().getMs();
+        debug("RenderManager.getMs() value: " + msValue);
 
         float randomFactor = RandomUtil.INSTANCE.randomInRange(0.5f, 1);
         float interpolationFactor = msValue * (1.1f - smoothing) * 5 / divider * randomFactor;
@@ -124,8 +133,11 @@ public class RotationUtil implements MC {
         // Ensure we have at least some minimal movement
         if (interpolationFactor < 0.01f) {
             interpolationFactor = 0.01f;
+            debug("Interpolation factor too small, using minimum value: 0.01");
         }
 
+        debug("Interpolation values: randomFactor=" + randomFactor +
+                ", interpolationFactor=" + interpolationFactor);
 
         // Get original yaw
         float originalYaw = getMc().player.getYaw();
@@ -137,7 +149,8 @@ public class RotationUtil implements MC {
                 interpolationFactor
         );
 
-
+        debug("Interpolated yaw: " + newYaw + " (from " + getMc().player.getYaw() +
+                " towards " + (rotation.getYaw() + randomValue / 2) + ")");
 
         // Only update yaw, keep the pitch the same
         setRotation(new Rotation(newYaw, getMc().player.getPitch()));
@@ -149,7 +162,9 @@ public class RotationUtil implements MC {
         // Check if we're close enough to target (within 5 degrees)
         boolean reachedTarget = Math.abs(getMc().player.getYaw() - rotation.getYaw()) < 5;
 
-
+        debug("Yaw movement: " + movement + " degrees");
+        debug("Progress made: " + madeProgress + ", reached target: " + reachedTarget);
+        debug("Distance to target: " + Math.abs(getMc().player.getYaw() - rotation.getYaw()) + " degrees");
 
         // Consider it a success if we either made progress or reached the target
         return madeProgress || reachedTarget;

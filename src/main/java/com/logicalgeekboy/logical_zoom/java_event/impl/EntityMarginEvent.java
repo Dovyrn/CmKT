@@ -22,5 +22,8 @@ public class EntityMarginEvent extends Event {
 
     public void setMargin(float margin) {
         this.margin = margin;
+        // IMPORTANT: When we set the margin, we're modifying the targeting
+        // so we need to mark the event as cancelled to indicate it was handled
+        this.cancelled = true;
     }
 }

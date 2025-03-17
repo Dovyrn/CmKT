@@ -55,7 +55,7 @@ object PlayerESP {
      * Render ESP boxes and tracers around players
      */
     private fun renderPlayerESP(matrixStack: MatrixStack?) {
-        if (matrixStack == null || !Config.espEnabled) return
+        if (matrixStack == null || !Config.espEnabled || !Config.espRenderPlayers)  return
 
         val world = mc.world ?: return
         val player = mc.player ?: return

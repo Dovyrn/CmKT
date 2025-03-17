@@ -8,6 +8,7 @@ import com.logicalgeekboy.logical_zoom.skid;
 public class RenderManager {
     public long ms;
     public long lastMs;
+    private boolean DEBUG = true;
 
 
 
@@ -21,6 +22,11 @@ public class RenderManager {
         ms = currentTime - lastMs;
         lastMs = currentTime;
 
+        // Cap the MS value to avoid extreme values
+        if (ms > 30) {
+            ms = 0L;
+        } else {
+        }
     }
 
     public float getMs() {
